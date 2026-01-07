@@ -1,0 +1,11 @@
+package com.tcon.shared_libraries.common.enums;
+
+
+public enum PaymentStatus {
+    PENDING,
+    PROCESSING,
+    COMPLETED,
+    FAILED,
+    REFUNDED,
+    PARTIALLY_REFUNDED
+}

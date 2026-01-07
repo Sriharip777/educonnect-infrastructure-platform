@@ -1,0 +1,28 @@
+# Maven
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.eclipse/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+EOF
+
+# Step 5: Create README.md
+cat > README.md << 'EOF'
+# Infrastructure Platform
+
+Tutoring platform infrastructure services including:
+- API Gateway (Port 8080)
+- Service Discovery (Port 8761)
+- Config Server (Port 8888)
