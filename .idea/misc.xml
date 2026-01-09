@@ -5,11 +5,14 @@
     <option name="originalFiles">
       <list>
         <option value="$PROJECT_DIR$/pom.xml.txt" />
-        <option value="$PROJECT_DIR$/api-gateway/pom.xml" />
-        <option value="$PROJECT_DIR$/config-server/pom.xml" />
-        <option value="$PROJECT_DIR$/service-discovery/pom.xml" />
-        <option value="$PROJECT_DIR$/pom.xml" />
         <option value="$PROJECT_DIR$/shared-libraries/pom.xml" />
+        <option value="$PROJECT_DIR$/pom.xml" />
+        <option value="$PROJECT_DIR$/shared-libraries/common-exceptions/pom.xml" />
+        <option value="$PROJECT_DIR$/shared-libraries/common-models/pom.xml" />
+        <option value="$PROJECT_DIR$/shared-libraries/common-security/pom.xml" />
+        <option value="$PROJECT_DIR$/shared-libraries/common-utils/pom.xml" />
+        <option value="$PROJECT_DIR$/shared-libraries/event-commons/pom.xml" />
+        <option value="$PROJECT_DIR$/auth-user-service/pom.xml" />
       </list>
     </option>
   </component>

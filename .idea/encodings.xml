@@ -3,8 +3,19 @@
   <component name="Encoding">
     <file url="file://$PROJECT_DIR$/api-gateway/src/main/java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/api-gateway/src/main/resources" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/auth-user-service/src/main/java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/config-server/src/main/java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/service-discovery/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/shared-libraries/common-exceptions/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/shared-libraries/common-exceptions/src/main/resources" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/shared-libraries/common-models/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/shared-libraries/common-models/src/main/resources" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/shared-libraries/common-security/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/shared-libraries/common-security/src/main/resources" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/shared-libraries/common-utils/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/shared-libraries/common-utils/src/main/resources" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/shared-libraries/event-commons/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/shared-libraries/event-commons/src/main/resources" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/shared-libraries/src/main/java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/shared-libraries/src/main/resources" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/src/main/java" charset="UTF-8" />
