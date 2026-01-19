@@ -8,6 +8,7 @@
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
         <module name="config-server" />
+        <module name="learning-management-service" />
         <module name="service-discovery" />
       </profile>
       <profile name="Annotation profile for Infrastructure Platform" enabled="true">
@@ -50,6 +51,7 @@
       <module name="common-utils" options="-parameters" />
       <module name="config-server" options="-parameters" />
       <module name="event-commons" options="-parameters" />
+      <module name="learning-management-service" options="-parameters" />
       <module name="service-discovery" options="-parameters" />
       <module name="shared-libraries" options="-parameters" />
     </option>

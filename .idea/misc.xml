@@ -13,6 +13,7 @@
         <option value="$PROJECT_DIR$/shared-libraries/common-utils/pom.xml" />
         <option value="$PROJECT_DIR$/shared-libraries/event-commons/pom.xml" />
         <option value="$PROJECT_DIR$/auth-user-service/pom.xml" />
+        <option value="$PROJECT_DIR$/learning-management-service/pom.xml" />
       </list>
     </option>
   </component>
