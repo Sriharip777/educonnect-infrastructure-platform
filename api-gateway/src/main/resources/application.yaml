@@ -1,16 +1,79 @@
 spring:
   application:
     name: api-gateway
+
   cloud:
     gateway:
+      # WebSocket support configuration
+      httpclient:
+        websocket:
+          max-frame-payload-length: 10485760  # 10MB max frame size
+        connect-timeout: 60000  # 60 seconds
+        response-timeout: 60s
+
       discovery:
         locator:
           enabled: true
           lower-case-service-id: true
+
+      routes:
+        # ===== WebSocket Routes (MUST BE FIRST) =====
+        - id: communication-ws
+          uri: ws://localhost:8083
+          predicates:
+            - Path=/communication/ws-messaging/**
+          filters:
+            - RewritePath=/communication/ws-messaging/(?<segment>.*), /ws-messaging/$\{segment}
+
+        # ===== HTTP Routes =====
+
+        # Communication Service
+        - id: communication-service
+          uri: lb://COMMUNICATION-SERVICE
+          predicates:
+            - Path=/communication/**
+          filters:
+            - RewritePath=/communication/(?<segment>.*), /$\{segment}
+
+        # Learning Management Service
+        - id: learning-management-service
+          uri: lb://LEARNING-MANAGEMENT-SERVICE
+          predicates:
+            - Path=/learning/**
+          filters:
+            - RewritePath=/learning/(?<segment>.*), /$\{segment}
+
+        # User Service
+        - id: user-service
+          uri: lb://USER-SERVICE
+          predicates:
+            - Path=/users/**
+          filters:
+            - RewritePath=/users/(?<segment>.*), /$\{segment}
+
+        # Payment Service
+        - id: payment-service
+          uri: lb://PAYMENT-SERVICE
+          predicates:
+            - Path=/payments/**
+          filters:
+            - RewritePath=/payments/(?<segment>.*), /$\{segment}
+
+        # Authentication Service (if separate)
+        - id: auth-service
+          uri: lb://AUTH-SERVICE
+          predicates:
+            - Path=/api/auth/**
+          filters:
+            - RewritePath=/api/auth/(?<segment>.*), /auth/$\{segment}
+
+      # Global CORS (backup - also configured in SecurityConfig)
       globalcors:
         corsConfigurations:
           '[/**]':
-            allowedOrigins: "http://localhost:3000,http://localhost:5173"
+            allowedOrigins:
+              - "http://localhost:3000"
+              - "http://localhost:5173"
             allowedMethods:
               - GET
               - POST
@@ -21,31 +84,84 @@ spring:
             allowedHeaders: "*"
             allowCredentials: true
             maxAge: 3600
+
+  # Redis Configuration
   data:
     redis:
       host: localhost
       port: 6379
+      timeout: 2000ms
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 0
 
+# Eureka Configuration
 eureka:
   client:
     service-url:
       defaultZone: http://localhost:8761/eureka/
+    register-with-eureka: true
+    fetch-registry: true
   instance:
     prefer-ip-address: true
+    lease-renewal-interval-in-seconds: 10
+    lease-expiration-duration-in-seconds: 30
 
+# JWT Configuration
 jwt:
   secret: your-super-secret-jwt-key-change-this-in-production-minimum-256-bits
+  expiration: 86400000  # 24 hours in milliseconds
 
+# Resilience4j Circuit Breaker (Optional)
+resilience4j:
+  circuitbreaker:
+    instances:
+      default:
+        registerHealthIndicator: true
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 5
+        permittedNumberOfCallsInHalfOpenState: 3
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+        waitDurationInOpenState: 10s
+        failureRateThreshold: 50
+        eventConsumerBufferSize: 10
+
+  timelimiter:
+    instances:
+      default:
+        timeoutDuration: 5s
+
+# Management & Actuator
 management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics,gateway
+        include: health,info,metrics,gateway,routes
   endpoint:
     health:
       show-details: always
+  metrics:
+    export:
+      prometheus:
+        enabled: true
 
+# Logging
 logging:
   level:
-    org.springframework.cloud.gateway: INFO
-    com.tutoring.gateway: DEBUG
+    root: INFO
+    org.springframework.cloud.gateway: DEBUG
+    org.springframework.web.reactive: DEBUG
+    org.springframework.security: DEBUG
+    org.springframework.web.socket: DEBUG
+    reactor.netty: DEBUG
+    com.tcon.api_gateway: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+
+# Server Configuration
+server:
+  port: 8080
+  netty:
+    connection-timeout: 60s
