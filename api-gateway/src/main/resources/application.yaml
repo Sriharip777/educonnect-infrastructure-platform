@@ -13,59 +13,10 @@ spring:
 
       discovery:
         locator:
-          enabled: true
-          lower-case-service-id: true
+          enabled: false  # CHANGED: Disable auto-discovery routes
 
-      routes:
-        # ===== WebSocket Routes (MUST BE FIRST) =====
-        - id: communication-ws
-          uri: ws://localhost:8083
-          predicates:
-            - Path=/communication/ws-messaging/**
-          filters:
-            - RewritePath=/communication/ws-messaging/(?<segment>.*), /ws-messaging/$\{segment}
-
-        # ===== HTTP Routes =====
-
-        # Communication Service
-        - id: communication-service
-          uri: lb://COMMUNICATION-SERVICE
-          predicates:
-            - Path=/communication/**
-          filters:
-            - RewritePath=/communication/(?<segment>.*), /$\{segment}
-
-        # Learning Management Service
-        - id: learning-management-service
-          uri: lb://LEARNING-MANAGEMENT-SERVICE
-          predicates:
-            - Path=/learning/**
-          filters:
-            - RewritePath=/learning/(?<segment>.*), /$\{segment}
-
-        # User Service
-        - id: user-service
-          uri: lb://USER-SERVICE
-          predicates:
-            - Path=/users/**
-          filters:
-            - RewritePath=/users/(?<segment>.*), /$\{segment}
-
-        # Payment Service
-        - id: payment-service
-          uri: lb://PAYMENT-SERVICE
-          predicates:
-            - Path=/payments/**
-          filters:
-            - RewritePath=/payments/(?<segment>.*), /$\{segment}
-
-        # Authentication Service (if separate)
-        - id: auth-service
-          uri: lb://AUTH-SERVICE
-          predicates:
-            - Path=/api/auth/**
-          filters:
-            - RewritePath=/api/auth/(?<segment>.*), /auth/$\{segment}
+      # REMOVE the entire 'routes:' section from YAML
+      # Use GatewayConfig.java instead
 
       # Global CORS (backup - also configured in SecurityConfig)
       globalcors:
