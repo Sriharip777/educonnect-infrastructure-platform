@@ -1,24 +1,18 @@
+server:
+  port: 8080
+
 spring:
   application:
     name: api-gateway
 
   cloud:
     gateway:
-      # WebSocket support configuration
-      httpclient:
-        websocket:
-          max-frame-payload-length: 10485760  # 10MB max frame size
-        connect-timeout: 60000  # 60 seconds
-        response-timeout: 60s
-
       discovery:
         locator:
-          enabled: false  # CHANGED: Disable auto-discovery routes
+          enabled: false
 
-      # REMOVE the entire 'routes:' section from YAML
-      # Use GatewayConfig.java instead
+      # Routes defined in GatewayConfig.java - REMOVE routes: section from here
 
-      # Global CORS (backup - also configured in SecurityConfig)
       globalcors:
         corsConfigurations:
           '[/**]':
@@ -34,85 +28,18 @@ spring:
               - OPTIONS
             allowedHeaders: "*"
             allowCredentials: true
-            maxAge: 3600
 
-  # Redis Configuration
-  data:
-    redis:
-      host: localhost
-      port: 6379
-      timeout: 2000ms
-      lettuce:
-        pool:
-          max-active: 8
-          max-idle: 8
-          min-idle: 0
-
-# Eureka Configuration
 eureka:
   client:
-    service-url:
-      defaultZone: http://localhost:8761/eureka/
-    register-with-eureka: true
-    fetch-registry: true
-  instance:
-    prefer-ip-address: true
-    lease-renewal-interval-in-seconds: 10
-    lease-expiration-duration-in-seconds: 30
+    enabled: false
 
-# JWT Configuration
 jwt:
-  secret: your-super-secret-jwt-key-change-this-in-production-minimum-256-bits
-  expiration: 86400000  # 24 hours in milliseconds
+  secret: my-super-secret-jwt-key-for-educonnect-platform-minimum-256-bits-required
+  expiration: 86400000
 
-# Resilience4j Circuit Breaker (Optional)
-resilience4j:
-  circuitbreaker:
-    instances:
-      default:
-        registerHealthIndicator: true
-        slidingWindowSize: 10
-        minimumNumberOfCalls: 5
-        permittedNumberOfCallsInHalfOpenState: 3
-        automaticTransitionFromOpenToHalfOpenEnabled: true
-        waitDurationInOpenState: 10s
-        failureRateThreshold: 50
-        eventConsumerBufferSize: 10
-
-  timelimiter:
-    instances:
-      default:
-        timeoutDuration: 5s
-
-# Management & Actuator
-management:
-  endpoints:
-    web:
-      exposure:
-        include: health,info,metrics,gateway,routes
-  endpoint:
-    health:
-      show-details: always
-  metrics:
-    export:
-      prometheus:
-        enabled: true
-
-# Logging
 logging:
   level:
     root: INFO
-    org.springframework.cloud.gateway: DEBUG
-    org.springframework.web.reactive: DEBUG
-    org.springframework.security: DEBUG
-    org.springframework.web.socket: DEBUG
-    reactor.netty: DEBUG
     com.tcon.api_gateway: DEBUG
-  pattern:
-    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
-
-# Server Configuration
-server:
-  port: 8080
-  netty:
-    connection-timeout: 60s
+    org.springframework.cloud.loadbalancer: OFF
+    com.netflix.discovery: OFF

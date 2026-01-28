@@ -11,55 +11,72 @@ public class GatewayConfig {
     @Bean
     public RouteLocator customRouteLocator(RouteLocatorBuilder builder) {
         return builder.routes()
-                // Auth & User Service Routes
+                // ===== Auth User Service (Port 8081) - Currently Running =====
                 .route("auth-service", r -> r
                         .path("/api/auth/**")
-                        .uri("lb://auth-user-service"))
-                .route("user-service", r -> r
-                        .path("/api/users/**", "/api/students/**", "/api/teachers/**", "/api/parents/**", "/api/admins/**")
-                        .uri("lb://auth-user-service"))
+                        .uri("http://localhost:8081"))
 
-                // Learning Management Service Routes
+                .route("student-service", r -> r
+                        .path("/api/student/**")
+                        .uri("http://localhost:8081"))
+
+                .route("teacher-service", r -> r
+                        .path("/api/teacher/**")
+                        .uri("http://localhost:8081"))
+
+                .route("parent-service", r -> r
+                        .path("/api/parent/**")
+                        .uri("http://localhost:8081"))
+
+                .route("admin-service", r -> r
+                        .path("/api/admin/**")
+                        .uri("http://localhost:8081"))
+
+                // ===== Learning Management Service (Port 8082) - Future =====
                 .route("course-service", r -> r
                         .path("/api/courses/**")
-                        .uri("lb://learning-management-service"))
+                        .uri("http://localhost:8082"))
+
                 .route("booking-service", r -> r
                         .path("/api/bookings/**", "/api/sessions/**", "/api/availability/**")
-                        .uri("lb://learning-management-service"))
+                        .uri("http://localhost:8082"))
+
                 .route("demo-service", r -> r
                         .path("/api/demo-classes/**")
-                        .uri("lb://learning-management-service"))
+                        .uri("http://localhost:8082"))
 
-                // Communication Service Routes
+                // ===== Communication Service (Port 8083) - Future =====
                 .route("video-service", r -> r
                         .path("/api/video/**")
-                        .uri("lb://communication-service"))
+                        .uri("http://localhost:8083"))
+
                 .route("messaging-service", r -> r
                         .path("/api/messages/**", "/api/conversations/**")
-                        .uri("lb://communication-service"))
+                        .uri("http://localhost:8083"))
 
-                // Financial Service Routes
+                // ===== Financial Service (Port 8084) - Future =====
                 .route("payment-service", r -> r
                         .path("/api/payments/**", "/api/refunds/**")
-                        .uri("lb://financial-service"))
+                        .uri("http://localhost:8084"))
+
                 .route("payout-service", r -> r
                         .path("/api/payouts/**", "/api/earnings/**")
-                        .uri("lb://financial-service"))
+                        .uri("http://localhost:8084"))
 
-                // Notification Service Routes
+                // ===== Notification Service (Port 8085) - Future =====
                 .route("notification-service", r -> r
                         .path("/api/notifications/**")
-                        .uri("lb://notification-service"))
+                        .uri("http://localhost:8085"))
 
-                // Integration Service Routes
+                // ===== Integration Service (Port 8086) - Future =====
                 .route("integration-service", r -> r
                         .path("/api/files/**", "/api/calendar/**", "/api/referrals/**", "/api/analytics/**")
-                        .uri("lb://integration-service"))
+                        .uri("http://localhost:8086"))
 
-                // Content Service Routes
+                // ===== Content Service (Port 8087) - Future =====
                 .route("content-service", r -> r
                         .path("/api/recordings/**", "/api/reviews/**", "/api/materials/**", "/api/assignments/**")
-                        .uri("lb://content-service"))
+                        .uri("http://localhost:8087"))
 
                 .build();
     }

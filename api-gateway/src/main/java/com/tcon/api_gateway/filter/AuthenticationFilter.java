@@ -2,90 +2,146 @@ package com.tcon.api_gateway.filter;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.security.Keys;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cloud.gateway.filter.GatewayFilterChain;
+import org.springframework.cloud.gateway.filter.GlobalFilter;
+import org.springframework.core.Ordered;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.stereotype.Component;
+import org.springframework.util.AntPathMatcher;
+import org.springframework.util.StringUtils;
 import org.springframework.web.server.ServerWebExchange;
-import org.springframework.web.server.WebFilter;
-import org.springframework.web.server.WebFilterChain;
 import reactor.core.publisher.Mono;
 
+import javax.crypto.SecretKey;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
-@Component
 @Slf4j
-public class AuthenticationFilter implements WebFilter {
+@Component
+public class AuthenticationFilter implements GlobalFilter, Ordered {
 
     @Value("${jwt.secret}")
     private String jwtSecret;
 
+    private final AntPathMatcher pathMatcher = new AntPathMatcher();
+
     private static final List<String> PUBLIC_PATHS = List.of(
-            "/api/auth/login",
             "/api/auth/register",
+            "/api/auth/login",
             "/api/auth/forgot-password",
             "/api/auth/refresh-token",
             "/api/auth/verify-email",
-            "/actuator",
-            "/eureka",
-            "/api/public",
-            "/api/courses",
-            "/communication/ws-messaging",
-            "/ws-messaging"
+            "/api/auth/reset-password",
+            "/actuator/**",
+            "/eureka/**",
+            "/api/public/**"
     );
 
     @Override
-    public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
+    public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         ServerHttpRequest request = exchange.getRequest();
         String path = request.getPath().value();
+        String method = request.getMethod().toString();
 
-        log.debug("Processing request: {}", path);
+        log.debug("🌐 API Gateway: {} {}", method, path);
 
+        // Skip JWT validation for public paths
         if (isPublicPath(path)) {
-            log.debug("Public path detected, skipping authentication: {}", path);
+            log.debug("✅ Public path: {}", path);
             return chain.filter(exchange);
         }
 
-        String authHeader = request.getHeaders().getFirst("Authorization");
+        // Extract Authorization header
+        String authHeader = request.getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
 
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            log.warn("Missing or invalid Authorization header for path: {}", path);
+        if (!StringUtils.hasText(authHeader) || !authHeader.startsWith("Bearer ")) {
+            log.warn("❌ Missing Authorization header for: {} {}", method, path);
             return onError(exchange, "Missing or invalid Authorization header", HttpStatus.UNAUTHORIZED);
         }
 
-        String token = authHeader.substring(7);
+        // Extract token and remove ALL whitespace
+        String token = authHeader.substring(7).trim().replaceAll("\\s+", "");
+        log.debug("🔍 Extracted JWT token (length: {})", token.length());
 
         try {
-            Claims claims = Jwts.parser()
-                    .setSigningKey(jwtSecret)
-                    .parseClaimsJws(token)
-                    .getBody();
+            // Validate JWT token
+            Claims claims = validateToken(token);
+            String userId = claims.getSubject();
+            String role = claims.get("role", String.class);
+            String email = claims.get("email", String.class);
 
-            log.debug("JWT validated successfully for user: {}", claims.getSubject());
+            log.info("✅ JWT VALID: user={}, role={}", email, role);
 
+            // Add user info to headers for downstream services
             ServerHttpRequest modifiedRequest = request.mutate()
-                    .header("X-User-Id", claims.getSubject())
-                    .header("X-User-Role", claims.get("role", String.class))
+                    .header("X-User-Id", userId)
+                    .header("X-User-Role", role)
+                    .header("X-User-Email", email)
                     .build();
 
+            log.debug("➡️ Forwarding to auth-user-service with user headers");
             return chain.filter(exchange.mutate().request(modifiedRequest).build());
 
+        } catch (io.jsonwebtoken.ExpiredJwtException e) {
+            log.error("❌ JWT expired: {}", e.getMessage());
+            return onError(exchange, "Token expired", HttpStatus.UNAUTHORIZED);
+        } catch (io.jsonwebtoken.security.SecurityException e) {
+            log.error("❌ Invalid JWT signature: {}", e.getMessage());
+            return onError(exchange, "Invalid token signature", HttpStatus.UNAUTHORIZED);
+        } catch (io.jsonwebtoken.MalformedJwtException e) {
+            log.error("❌ Malformed JWT: {}", e.getMessage());
+            return onError(exchange, "Malformed token", HttpStatus.UNAUTHORIZED);
         } catch (Exception e) {
-            log.error("JWT validation failed: {}", e.getMessage());
-            return onError(exchange, "Invalid or expired token", HttpStatus.UNAUTHORIZED);
+            log.error("❌ JWT validation failed: {}", e.getMessage());
+            return onError(exchange, "Invalid token", HttpStatus.UNAUTHORIZED);
         }
     }
 
     private boolean isPublicPath(String path) {
-        return PUBLIC_PATHS.stream().anyMatch(path::startsWith);
+        return PUBLIC_PATHS.stream()
+                .anyMatch(pattern -> pathMatcher.match(pattern, path));
+    }
+
+    private Claims validateToken(String token) {
+        SecretKey key = Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
+
+        return Jwts.parserBuilder()
+                .setSigningKey(key)
+                .build()
+                .parseClaimsJws(token)
+                .getBody();
     }
 
     private Mono<Void> onError(ServerWebExchange exchange, String message, HttpStatus status) {
         ServerHttpResponse response = exchange.getResponse();
         response.setStatusCode(status);
-        log.warn("Authentication error: {} - Path: {}", message, exchange.getRequest().getPath());
-        return response.setComplete();
+        response.getHeaders().add(HttpHeaders.CONTENT_TYPE, "application/json");
+
+        String errorBody = String.format(
+                "{\"error\":\"%s\",\"message\":\"%s\",\"status\":%d,\"path\":\"%s\",\"timestamp\":\"%s\"}",
+                status.getReasonPhrase(),
+                message,
+                status.value(),
+                exchange.getRequest().getPath().value(),
+                java.time.LocalDateTime.now()
+        );
+
+        log.warn("⛔ Returning {} for {} {}",
+                status,
+                exchange.getRequest().getMethod(),
+                exchange.getRequest().getPath().value());  // FIXED: Use exchange.getRequest().getPath().value()
+
+        return response.writeWith(Mono.just(response.bufferFactory().wrap(errorBody.getBytes())));
+    }
+
+    @Override
+    public int getOrder() {
+        return -100;
     }
 }
