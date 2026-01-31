@@ -34,6 +34,11 @@ package com.tcon.api_gateway.config;
         .path("/api/admin/**")
         .uri("http://localhost:8081"))
 
+                // ✅ ADD THIS NEW ROUTE FOR USERS
+                .route("user-service", r -> r
+                        .path("/api/users/**")
+                        .uri("http://localhost:8081"))
+
         // ===== Learning Management Service (Port 8082) - Future =====
         .route("course-service", r -> r
         .path("/api/courses/**")
@@ -44,8 +49,8 @@ package com.tcon.api_gateway.config;
         .uri("http://localhost:8084"))
 
         .route("demo-service", r -> r
-        .path("/api/demo-classes/**")
-        .uri("http://localhost:8082"))
+        .path("/api/demos/**")
+        .uri("http://localhost:8084"))
 
         // ===== Communication Service (Port 8083) - Future =====
         .route("video-service", r -> r
@@ -59,11 +64,11 @@ package com.tcon.api_gateway.config;
         // ===== Financial Service (Port 8084) - Future =====
         .route("payment-service", r -> r
         .path("/api/payments/**", "/api/refunds/**")
-        .uri("http://localhost:8084"))
+        .uri("http://localhost:8085"))
 
         .route("payout-service", r -> r
         .path("/api/payouts/**", "/api/earnings/**")
-        .uri("http://localhost:8084"))
+        .uri("http://localhost:8085"))
 
         // ===== Notification Service (Port 8085) - Future =====
         .route("notification-service", r -> r
