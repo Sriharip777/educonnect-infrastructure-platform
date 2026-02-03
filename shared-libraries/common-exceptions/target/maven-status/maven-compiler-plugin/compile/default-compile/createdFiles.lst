@@ -1,0 +1,5 @@
+com\tcon\exception\UnauthorizedException.class
+com\tcon\exception\GlobalExceptionHandler.class
+com\tcon\exception\ValidationException.class
+com\tcon\exception\PaymentException.class
+com\tcon\exception\ResourceNotFoundException.class

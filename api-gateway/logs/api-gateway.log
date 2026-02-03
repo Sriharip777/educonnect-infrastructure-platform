@@ -214,3 +214,39 @@ Property source 'Config resource 'class path resource [application.yaml]' via lo
 
 Please refer to the release notes or reference guide for potential alternatives.
 
+2026-02-03 17:55:40 [AsyncResolver-bootstrap-executor-%d] INFO  c.n.d.s.r.aws.ConfigClusterResolver - Resolving eureka endpoints via configuration
+2026-02-03 18:00:40 [AsyncResolver-bootstrap-executor-%d] INFO  c.n.d.s.r.aws.ConfigClusterResolver - Resolving eureka endpoints via configuration
+2026-02-03 18:05:40 [AsyncResolver-bootstrap-executor-%d] INFO  c.n.d.s.r.aws.ConfigClusterResolver - Resolving eureka endpoints via configuration
+2026-02-03 18:10:40 [AsyncResolver-bootstrap-executor-%d] INFO  c.n.d.s.r.aws.ConfigClusterResolver - Resolving eureka endpoints via configuration
+2026-02-03 18:14:37 [parallel-1] DEBUG o.s.c.g.h.RoutePredicateHandlerMapping - Route matched: auth-service
+2026-02-03 18:14:37 [parallel-1] DEBUG o.s.c.g.h.RoutePredicateHandlerMapping - Mapping [Exchange: POST http://localhost:8080/api/auth/login] to Route{id='auth-service', uri=lb://auth-user-service, order=0, predicate=Paths: [/api/auth/**], match trailing slash: true, gatewayFilters=[[org.springframework.cloud.gateway.filter.factory.RequestRateLimiterGatewayFilterFactory$$Lambda$989/0x000001c6495f0250@7d947065, order = 0], [[SpringCloudCircuitBreakerResilience4JFilterFactory name = 'auth-service-cb', fallback = forward:/fallback/auth], order = 0], [[Retry routeId = 'auth-service', retries = 2, series = list[SERVER_ERROR], statuses = list[[empty]], methods = list[GET], exceptions = list[IOException, TimeoutException], backoff = [RetryGatewayFilterFactory.BackoffConfig@1ae2ba6 firstBackoff = PT0.1S, maxBackoff = PT1S, factor = 2, basedOnPreviousValue = false], jitter = [null], timeout = [null]], order = 0]], metadata={}}
+2026-02-03 18:14:37 [parallel-1] DEBUG o.s.c.g.h.RoutePredicateHandlerMapping - [15cda6c1-1] Mapped to org.springframework.cloud.gateway.handler.FilteringWebHandler@8ce4320
+2026-02-03 18:14:37 [reactor-http-nio-3] DEBUG c.t.a.filter.AuthenticationFilter - ? API Gateway: POST /api/auth/login
+2026-02-03 18:14:37 [reactor-http-nio-3] DEBUG c.t.a.filter.AuthenticationFilter - ? Public path: /api/auth/login
+2026-02-03 18:14:37 [reactor-http-nio-3] DEBUG c.t.a.config.RateLimitConfig - Rate limiting by IP: 0:0:0:0:0:0:0:1
+2026-02-03 18:14:37 [lettuce-nioEventLoop-5-1] INFO  c.t.a.config.LoadBalancerConfig - ? Configuring Round Robin Load Balancer for service: auth-user-service
+2026-02-03 18:14:37 [lettuce-nioEventLoop-5-1] DEBUG c.t.a.config.LoadBalancerConfig - ? Random Load Balancer configured for service: auth-user-service
+2026-02-03 18:14:37 [lettuce-nioEventLoop-5-1] INFO  c.t.api_gateway.filter.LoggingFilter - Request: POST /api/auth/login from /[0:0:0:0:0:0:0:1]:53186
+2026-02-03 18:14:37 [reactor-http-nio-5] DEBUG c.t.a.config.WebSocketProxyConfig - WebSocket connection established, adding timeout handlers
+2026-02-03 18:14:39 [reactor-http-nio-5] INFO  c.t.api_gateway.filter.LoggingFilter - Response: 200 OK for POST /api/auth/login
+2026-02-03 18:14:39 [reactor-http-nio-5] DEBUG c.t.a.config.WebSocketProxyConfig - WebSocket connection disconnected
+2026-02-03 18:15:40 [AsyncResolver-bootstrap-executor-%d] INFO  c.n.d.s.r.aws.ConfigClusterResolver - Resolving eureka endpoints via configuration
+2026-02-03 18:20:40 [AsyncResolver-bootstrap-executor-%d] INFO  c.n.d.s.r.aws.ConfigClusterResolver - Resolving eureka endpoints via configuration
+2026-02-03 18:25:40 [AsyncResolver-bootstrap-executor-%d] INFO  c.n.d.s.r.aws.ConfigClusterResolver - Resolving eureka endpoints via configuration
+2026-02-03 18:30:40 [AsyncResolver-bootstrap-executor-%d] INFO  c.n.d.s.r.aws.ConfigClusterResolver - Resolving eureka endpoints via configuration
+2026-02-03 18:31:04 [DiscoveryClient-HeartbeatExecutor-%d] INFO  c.netflix.discovery.DiscoveryClient - DiscoveryClient_API-GATEWAY/api-gateway:8080 - Re-registering apps/API-GATEWAY
+2026-02-03 18:31:04 [DiscoveryClient-HeartbeatExecutor-%d] INFO  c.netflix.discovery.DiscoveryClient - DiscoveryClient_API-GATEWAY/api-gateway:8080: registering service...
+2026-02-03 18:31:04 [DiscoveryClient-HeartbeatExecutor-%d] INFO  c.netflix.discovery.DiscoveryClient - DiscoveryClient_API-GATEWAY/api-gateway:8080 - registration status: 204
+2026-02-03 18:31:44 [parallel-6] DEBUG o.s.c.g.h.RoutePredicateHandlerMapping - Route matched: auth-service
+2026-02-03 18:31:44 [parallel-6] DEBUG o.s.c.g.h.RoutePredicateHandlerMapping - Mapping [Exchange: POST http://localhost:8080/api/auth/login] to Route{id='auth-service', uri=lb://auth-user-service, order=0, predicate=Paths: [/api/auth/**], match trailing slash: true, gatewayFilters=[[org.springframework.cloud.gateway.filter.factory.RequestRateLimiterGatewayFilterFactory$$Lambda$989/0x000001c6495f0250@7d947065, order = 0], [[SpringCloudCircuitBreakerResilience4JFilterFactory name = 'auth-service-cb', fallback = forward:/fallback/auth], order = 0], [[Retry routeId = 'auth-service', retries = 2, series = list[SERVER_ERROR], statuses = list[[empty]], methods = list[GET], exceptions = list[IOException, TimeoutException], backoff = [RetryGatewayFilterFactory.BackoffConfig@1ae2ba6 firstBackoff = PT0.1S, maxBackoff = PT1S, factor = 2, basedOnPreviousValue = false], jitter = [null], timeout = [null]], order = 0]], metadata={}}
+2026-02-03 18:31:44 [parallel-6] DEBUG o.s.c.g.h.RoutePredicateHandlerMapping - [bb412475-2] Mapped to org.springframework.cloud.gateway.handler.FilteringWebHandler@8ce4320
+2026-02-03 18:31:44 [reactor-http-nio-7] DEBUG c.t.a.filter.AuthenticationFilter - ? API Gateway: POST /api/auth/login
+2026-02-03 18:31:44 [reactor-http-nio-7] DEBUG c.t.a.filter.AuthenticationFilter - ? Public path: /api/auth/login
+2026-02-03 18:31:44 [reactor-http-nio-7] DEBUG c.t.a.config.RateLimitConfig - Rate limiting by IP: 0:0:0:0:0:0:0:1
+2026-02-03 18:31:44 [lettuce-nioEventLoop-5-1] INFO  c.t.api_gateway.filter.LoggingFilter - Request: POST /api/auth/login from /[0:0:0:0:0:0:0:1]:62832
+2026-02-03 18:31:44 [reactor-http-nio-8] DEBUG c.t.a.config.WebSocketProxyConfig - WebSocket connection established, adding timeout handlers
+2026-02-03 18:31:45 [reactor-http-nio-8] INFO  c.t.api_gateway.filter.LoggingFilter - Response: 200 OK for POST /api/auth/login
+2026-02-03 18:31:45 [reactor-http-nio-8] DEBUG c.t.a.config.WebSocketProxyConfig - WebSocket connection disconnected
+2026-02-03 18:35:40 [AsyncResolver-bootstrap-executor-%d] INFO  c.n.d.s.r.aws.ConfigClusterResolver - Resolving eureka endpoints via configuration
+2026-02-03 18:40:40 [AsyncResolver-bootstrap-executor-%d] INFO  c.n.d.s.r.aws.ConfigClusterResolver - Resolving eureka endpoints via configuration
+2026-02-03 18:45:40 [AsyncResolver-bootstrap-executor-%d] INFO  c.n.d.s.r.aws.ConfigClusterResolver - Resolving eureka endpoints via configuration
