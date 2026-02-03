@@ -7,7 +7,6 @@ import com.tcon.events.events.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.experimental.SuperBuilder;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
@@ -18,7 +17,6 @@ import java.util.UUID;
  * All events must extend this class to ensure consistent structure.
  */
 @Data
-@SuperBuilder
 @NoArgsConstructor
 @AllArgsConstructor
 @JsonTypeInfo(
@@ -40,7 +38,8 @@ import java.util.UUID;
         @JsonSubTypes.Type(value = ReviewCreatedEvent.class, name = "REVIEW_CREATED"),
         @JsonSubTypes.Type(value = ReferralCompletedEvent.class, name = "REFERRAL_COMPLETED"),
         @JsonSubTypes.Type(value = RecordingAvailableEvent.class, name = "RECORDING_AVAILABLE"),
-        @JsonSubTypes.Type(value = SessionScheduledEvent.class, name = "SESSION_SCHEDULED")
+        @JsonSubTypes.Type(value = SessionScheduledEvent.class, name = "SESSION_SCHEDULED"),
+        @JsonSubTypes.Type(value = PaymentSuccessEvent.class, name = "PAYMENT_SUCCESS")
 })
 public abstract class BaseEvent implements Serializable {
 
@@ -73,16 +72,22 @@ public abstract class BaseEvent implements Serializable {
     private String correlationId;
 
     /**
-     * Initialize default values
-     */
-    protected BaseEvent() {
-        this.eventId = UUID.randomUUID().toString();
-        this.timestamp = LocalDateTime.now();
-        this.version = "1.0";
-    }
-
-    /**
      * Get the event type name
      */
     public abstract String getEventType();
+
+    /**
+     * Create a new event with default values
+     */
+    public static void initializeDefaults(BaseEvent event) {
+        if (event.getEventId() == null) {
+            event.setEventId(UUID.randomUUID().toString());
+        }
+        if (event.getTimestamp() == null) {
+            event.setTimestamp(LocalDateTime.now());
+        }
+        if (event.getVersion() == null) {
+            event.setVersion("1.0");
+        }
+    }
 }
