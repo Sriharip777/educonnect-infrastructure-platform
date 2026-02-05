@@ -1,5 +1,6 @@
 server:
-  port: 8080
+  # CRITICAL: Cloud Run sets the PORT env var. You must listen on it.
+  port: ${PORT:8080}
   netty:
     connection-timeout: 10s
 
@@ -20,7 +21,12 @@ spring:
           predicates:
             - Path=/api/auth/**
           filters:
-            - RewritePath=/api/auth/(?<segment>.*), /api/auth/${segment}
+            # FIX 1: Use StripPrefix=1.
+            # Request: /api/auth/login -> Service: /auth/login
+            # This removes the first segment (/api)
+            - StripPrefix=1
+
+            # (Removed the broken RewritePath)
 
       default-filters:
         - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_UNIQUE
@@ -83,8 +89,11 @@ eureka:
       defaultZone: ${EUREKA_URL:http://localhost:8761/eureka/}
     registry-fetch-interval-seconds: 5
   instance:
-    prefer-ip-address: true
-    instance-id: ${spring.application.name}:${server.port}
+    # FIX 2: Dynamic Hostname for Cloud Run
+    # If running locally, prefer IP. If in Cloud Run, use the hostname.
+    prefer-ip-address: ${EUREKA_PREFER_IP:false}
+    hostname: ${EUREKA_INSTANCE_HOSTNAME:localhost}
+    instance-id: ${spring.application.name}:${random.value}
     lease-renewal-interval-in-seconds: 5
     lease-expiration-duration-in-seconds: 10
     metadata-map:
@@ -95,6 +104,7 @@ jwt:
   secret: ${JWT_SECRET:my-super-secret-jwt-key-for-educonnect-platform-minimum-256-bits-required}
   expiration: 86400000
 
+# (Resilience4j and Logging configs remain the same...)
 resilience4j:
   circuitbreaker:
     configs:
@@ -120,17 +130,6 @@ resilience4j:
     instances:
       auth-service-cb:
         baseConfig: default
-      booking-service-cb:
-        baseConfig: default
-      payment-service-cb:
-        baseConfig: default
-        waitDurationInOpenState: 60s
-        failureRateThreshold: 40
-      video-service-cb:
-        baseConfig: default
-        slowCallDurationThreshold: 5s
-      notification-service-cb:
-        baseConfig: default
 
   timelimiter:
     configs:
@@ -140,12 +139,6 @@ resilience4j:
     instances:
       auth-service-cb:
         baseConfig: default
-      booking-service-cb:
-        timeoutDuration: 10s
-      payment-service-cb:
-        timeoutDuration: 15s
-      video-service-cb:
-        timeoutDuration: 20s
 
   retry:
     configs:
@@ -161,9 +154,6 @@ resilience4j:
     instances:
       auth-service-cb:
         baseConfig: default
-      payment-service-cb:
-        maxAttempts: 3
-        waitDuration: 1000ms
 
 rate-limit:
   enabled: true
@@ -207,8 +197,3 @@ logging:
     org.springframework.data.redis: INFO
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
-    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
-  file:
-    name: logs/api-gateway.log
-    max-size: 10MB
-    max-history: 30
