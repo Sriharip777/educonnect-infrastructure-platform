@@ -14,7 +14,6 @@ spring:
           enabled: true
           lower-case-service-id: true
 
-      # Default filters applied to all routes
       default-filters:
         - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_UNIQUE
         - name: Retry
@@ -25,7 +24,6 @@ spring:
               firstBackoff: 50ms
               maxBackoff: 500ms
 
-      # Global CORS Configuration
       globalcors:
         add-to-simple-url-handler-mapping: true
         corsConfigurations:
@@ -48,7 +46,6 @@ spring:
             allowCredentials: true
             maxAge: 3600
 
-      # HTTP Client Configuration
       httpclient:
         connect-timeout: 5000
         response-timeout: 10s
@@ -59,7 +56,6 @@ spring:
         wiretap: false
         compression: true
 
-    # Load Balancer Configuration
     loadbalancer:
       enabled: true
       ribbon:
@@ -77,7 +73,6 @@ spring:
         ttl: 35s
         capacity: 256
 
-  # Redis Configuration
   data:
     redis:
       host: localhost
@@ -92,14 +87,12 @@ spring:
           max-wait: 2000ms
         shutdown-timeout: 200ms
 
-  # Cache Configuration
   cache:
     type: redis
     redis:
-      time-to-live: 600000  # 10 minutes
+      time-to-live: 600000
       cache-null-values: false
 
-# Eureka Configuration
 eureka:
   client:
     enabled: true
@@ -116,12 +109,10 @@ eureka:
       zone: zone1
       version: 1.0.0
 
-# JWT Configuration
 jwt:
   secret: my-super-secret-jwt-key-for-educonnect-platform-minimum-256-bits-required
-  expiration: 86400000  # 24 hours
+  expiration: 86400000
 
-# Resilience4j Circuit Breaker Configuration
 resilience4j:
   circuitbreaker:
     configs:
@@ -159,7 +150,6 @@ resilience4j:
       notification-service-cb:
         baseConfig: default
 
-  # Time Limiter Configuration
   timelimiter:
     configs:
       default:
@@ -175,7 +165,6 @@ resilience4j:
       video-service-cb:
         timeoutDuration: 20s
 
-  # Retry Configuration
   retry:
     configs:
       default:
@@ -194,13 +183,11 @@ resilience4j:
         maxAttempts: 3
         waitDuration: 1000ms
 
-# Rate Limiting Configuration
 rate-limit:
   enabled: true
   default-replenish-rate: 100
   default-burst-capacity: 200
 
-# Management & Monitoring
 management:
   endpoints:
     web:
@@ -225,7 +212,6 @@ management:
     redis:
       enabled: true
 
-# Logging Configuration
 logging:
   level:
     root: INFO
