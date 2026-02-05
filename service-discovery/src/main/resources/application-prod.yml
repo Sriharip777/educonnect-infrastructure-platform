@@ -7,7 +7,7 @@ spring:
 
 eureka:
   instance:
-    hostname: localhost
+    hostname: localhost          # fine in Cloud Run too
   client:
     register-with-eureka: false
     fetch-registry: false
