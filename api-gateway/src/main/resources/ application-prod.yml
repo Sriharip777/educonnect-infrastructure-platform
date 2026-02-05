@@ -1,5 +1,4 @@
 server:
-  # CRITICAL: Cloud Run sets the PORT env var. You must listen on it.
   port: ${PORT:8080}
   netty:
     connection-timeout: 10s
@@ -16,20 +15,21 @@ spring:
           lower-case-service-id: true
 
       routes:
+        # AUTH SERVICE ROUTE (Fixed)
         - id: auth-service
           uri: lb://AUTH-USER-SERVICE
           predicates:
             - Path=/api/auth/**
           filters:
-            # FIX 1: Use StripPrefix=1.
-            # Request: /api/auth/login -> Service: /auth/login
-            # This removes the first segment (/api)
-            - StripPrefix=1
+            # FORCE the path structure.
+            # This regex takes "/api/auth/anything" and transforms it to "/auth/anything"
+            # Example: /api/auth/login -> /auth/login
+            - RewritePath=/api/auth/?(?<segment>.*), /auth/${segment}
 
-            # (Removed the broken RewritePath)
+            # Remove duplicates if Cloud Run adds them
+            - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_UNIQUE
 
       default-filters:
-        - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_UNIQUE
         - name: Retry
           args:
             retries: 2
@@ -43,14 +43,7 @@ spring:
         corsConfigurations:
           '[/**]':
             allowedOriginPatterns: "*"
-            allowedMethods:
-              - GET
-              - POST
-              - PUT
-              - DELETE
-              - PATCH
-              - OPTIONS
-              - HEAD
+            allowedMethods: "*"
             allowedHeaders: "*"
             allowCredentials: true
             maxAge: 3600
@@ -65,44 +58,23 @@ spring:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
       timeout: 2000ms
-      database: 0
-      lettuce:
-        pool:
-          max-active: 10
-          max-idle: 10
-          min-idle: 2
-          max-wait: 2000ms
-        shutdown-timeout: 200ms
-
-  cache:
-    type: redis
-    redis:
-      time-to-live: 600000
-      cache-null-values: false
 
 eureka:
   client:
     enabled: true
-    register-with-eureka: true
-    fetch-registry: true
     service-url:
       defaultZone: ${EUREKA_URL:http://localhost:8761/eureka/}
     registry-fetch-interval-seconds: 5
   instance:
-    # FIX 2: Dynamic Hostname for Cloud Run
-    # If running locally, prefer IP. If in Cloud Run, use the hostname.
-    prefer-ip-address: ${EUREKA_PREFER_IP:false}
+    # CLOUD RUN FIX: Use hostname, not IP
+    prefer-ip-address: false
     hostname: ${EUREKA_INSTANCE_HOSTNAME:localhost}
     instance-id: ${spring.application.name}:${random.value}
-    lease-renewal-interval-in-seconds: 5
-    lease-expiration-duration-in-seconds: 10
-    metadata-map:
-      zone: zone1
-      version: 1.0.0
 
 jwt:
   secret: ${JWT_SECRET:my-super-secret-jwt-key-for-educonnect-platform-minimum-256-bits-required}
   expiration: 86400000
+
 
 # (Resilience4j and Logging configs remain the same...)
 resilience4j:
