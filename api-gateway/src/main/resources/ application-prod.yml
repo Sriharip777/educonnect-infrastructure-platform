@@ -1,4 +1,5 @@
 server:
+  # Cloud Run injects PORT automatically. We default to 8080 for local testing.
   port: ${PORT:8080}
   netty:
     connection-timeout: 10s
@@ -15,19 +16,28 @@ spring:
           lower-case-service-id: true
 
       routes:
-        # AUTH SERVICE ROUTE (Fixed)
+        # ==========================================
+        # AUTH SERVICE ROUTE (Fixed with StripPrefix)
+        # ==========================================
         - id: auth-service
           uri: lb://AUTH-USER-SERVICE
           predicates:
             - Path=/api/auth/**
           filters:
-            # FORCE the path structure.
-            # This regex takes "/api/auth/anything" and transforms it to "/auth/anything"
-            # Example: /api/auth/login -> /auth/login
-            - RewritePath=/api/auth/?(?<segment>.*), /auth/${segment}
+            # FIX: Removes the first segment "/api"
+            # Request: /api/auth/login -> Service receives: /auth/login
+            # This is safer than RewritePath for Cloud Run
+            - StripPrefix=1
 
-            # Remove duplicates if Cloud Run adds them
+            # Remove duplicate CORS headers if Cloud Run load balancer adds them
             - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_UNIQUE
+            - name: Retry
+              args:
+                retries: 3
+                methods: GET,POST
+                backoff:
+                  firstBackoff: 50ms
+                  maxBackoff: 500ms
 
       default-filters:
         - name: Retry
@@ -43,7 +53,13 @@ spring:
         corsConfigurations:
           '[/**]':
             allowedOriginPatterns: "*"
-            allowedMethods: "*"
+            allowedMethods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - PATCH
+              - OPTIONS
             allowedHeaders: "*"
             allowCredentials: true
             maxAge: 3600
@@ -55,6 +71,7 @@ spring:
 
   data:
     redis:
+      # Use Env Var for Prod, localhost for local
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
       timeout: 2000ms
@@ -66,17 +83,29 @@ eureka:
       defaultZone: ${EUREKA_URL:http://localhost:8761/eureka/}
     registry-fetch-interval-seconds: 5
   instance:
-    # CLOUD RUN FIX: Use hostname, not IP
-    prefer-ip-address: false
+    # CLOUD RUN CONFIGURATION
+    # Local: prefer-ip=true
+    # Cloud Run: prefer-ip=false (Uses hostname/public URL)
+    prefer-ip-address: ${EUREKA_PREFER_IP:false}
+
+    # Cloud Run Public URL
     hostname: ${EUREKA_INSTANCE_HOSTNAME:localhost}
+
     instance-id: ${spring.application.name}:${random.value}
+    lease-renewal-interval-in-seconds: 5
+    lease-expiration-duration-in-seconds: 10
+
+    # Actuator Links
+    health-check-url-path: /actuator/health
+    status-page-url-path: /actuator/info
 
 jwt:
   secret: ${JWT_SECRET:my-super-secret-jwt-key-for-educonnect-platform-minimum-256-bits-required}
   expiration: 86400000
 
-
-# (Resilience4j and Logging configs remain the same...)
+# ==========================================
+# RESILIENCE4J CONFIGURATION
+# ==========================================
 resilience4j:
   circuitbreaker:
     configs:
@@ -136,12 +165,11 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics,gateway,prometheus,circuitbreakers,circuitbreakerevents
+        include: health,info,metrics,gateway,prometheus,circuitbreakers
       base-path: /actuator
   endpoint:
     health:
       show-details: always
-      show-components: always
     gateway:
       enabled: true
   metrics:
@@ -161,11 +189,6 @@ logging:
     root: INFO
     com.tcon.api_gateway: DEBUG
     org.springframework.cloud.gateway: INFO
+    # Enable this to see exactly where Gateway is routing requests
+    org.springframework.cloud.gateway.route.RouteDefinitionRouteLocator: INFO
     org.springframework.cloud.gateway.handler.RoutePredicateHandlerMapping: DEBUG
-    org.springframework.cloud.loadbalancer: WARN
-    io.github.resilience4j: INFO
-    reactor.netty: WARN
-    io.netty: ERROR
-    org.springframework.data.redis: INFO
-  pattern:
-    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
