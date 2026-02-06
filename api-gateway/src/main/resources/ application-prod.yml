@@ -80,7 +80,7 @@ eureka:
   client:
     enabled: true
     service-url:
-      defaultZone: ${EUREKA_URL:http://localhost:8761/eureka/}
+      defaultZone: ${EUREKA_URL}
     registry-fetch-interval-seconds: 5
   instance:
     # CLOUD RUN CONFIGURATION

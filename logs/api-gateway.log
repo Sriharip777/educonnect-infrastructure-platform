@@ -405,3 +405,283 @@ com.netflix.discovery.shared.transport.TransportException: Cannot execute reques
 	at org.springframework.boot.SpringApplicationShutdownHook.run(SpringApplicationShutdownHook.java:116)
 	at java.base/java.lang.Thread.run(Thread.java:840)
 2026-02-06 08:28:17 [SpringApplicationShutdownHook] INFO  c.netflix.discovery.DiscoveryClient - Completed shut down of DiscoveryClient
+2026-02-06 08:28:45 [main] INFO  c.t.a.ApiGatewayApplication - Starting ApiGatewayApplication using Java 17.0.17 with PID 23112 (C:\Users\sriha\GitProjects\EduconnectBackend\educonnect-infrastructure-platform\api-gateway\target\classes started by sriha in C:\Users\sriha\GitProjects\EduconnectBackend\educonnect-infrastructure-platform)
+2026-02-06 08:28:45 [main] DEBUG c.t.a.ApiGatewayApplication - Running with Spring Boot v3.5.9, Spring v6.2.15
+2026-02-06 08:28:45 [main] INFO  c.t.a.ApiGatewayApplication - No active profile set, falling back to 1 default profile: "default"
+2026-02-06 08:28:49 [main] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Multiple Spring Data modules found, entering strict repository configuration mode
+2026-02-06 08:28:49 [main] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Bootstrapping Spring Data Redis repositories in DEFAULT mode.
+2026-02-06 08:28:49 [main] INFO  o.s.d.r.c.RepositoryConfigurationDelegate - Finished Spring Data repository scanning in 51 ms. Found 0 Redis repository interfaces.
+2026-02-06 08:28:51 [main] INFO  o.s.cloud.context.scope.GenericScope - BeanFactory id=72e6be03-fbfc-3017-a599-265db92ede6e
+2026-02-06 08:28:52 [main] INFO  c.t.a.config.RateLimitConfig - 🔧 Configuring User-based Rate Limiting Key Resolver
+2026-02-06 08:28:52 [main] INFO  c.t.a.config.RateLimitConfig - 🔧 [PRIMARY] Default Redis Rate Limiter: 100 req/s, burst: 200
+2026-02-06 08:28:53 [main] INFO  c.t.api_gateway.config.GatewayConfig - 🚀 Configuring API Gateway Routes with Circuit Breakers, Rate Limiting, and Retry Logic
+2026-02-06 08:28:53 [main] INFO  c.t.api_gateway.config.GatewayConfig - 🔧 Configuring Default Circuit Breaker Settings
+2026-02-06 08:28:53 [main] INFO  c.t.api_gateway.config.GatewayConfig - 🔧 Configuring Payment Circuit Breaker Settings
+2026-02-06 08:28:53 [main] INFO  c.t.api_gateway.config.GatewayConfig - 🔧 Configuring Video Circuit Breaker Settings
+2026-02-06 08:28:54 [main] INFO  c.t.a.config.LoadBalancerConfig - 🔄 Configuring Round Robin Load Balancer for service: null
+2026-02-06 08:28:54 [main] DEBUG c.t.a.config.LoadBalancerConfig - 🎲 Random Load Balancer configured for service: null
+2026-02-06 08:28:54 [main] INFO  c.t.a.config.RateLimitConfig - 🔧 Configuring API Key-based Rate Limiting Key Resolver
+2026-02-06 08:28:54 [main] INFO  c.t.a.config.RateLimitConfig - 🔧 Payment Redis Rate Limiter: 10 req/s, burst: 20
+2026-02-06 08:28:54 [main] INFO  c.t.a.config.RateLimitConfig - 🔧 Auth Redis Rate Limiter: 5 req/s, burst: 10
+2026-02-06 08:28:54 [main] INFO  c.t.a.config.RateLimitConfig - 🔧 Public Redis Rate Limiter: 1000 req/s, burst: 2000
+2026-02-06 08:28:54 [main] INFO  c.t.api_gateway.config.RedisConfig - 🔧 Configuring Reactive Redis Template for caching and session management
+2026-02-06 08:28:54 [main] INFO  c.t.api_gateway.config.RedisConfig - ✅ Reactive Redis Template configured successfully
+2026-02-06 08:28:54 [main] INFO  c.t.api_gateway.config.RedisConfig - 🔧 Configuring Reactive Redis Object Template with JSON serialization
+2026-02-06 08:28:55 [main] INFO  c.t.api_gateway.config.RedisConfig - ✅ Reactive Redis Object Template configured successfully
+2026-02-06 08:28:55 [main] INFO  o.s.b.a.s.r.ReactiveUserDetailsServiceAutoConfiguration - 
+
+Using generated security password: 655b0e4d-9c82-4b55-84d0-5040664fa36c
+
+2026-02-06 08:28:55 [main] INFO  c.t.a.config.SecurityConfig - 🔒 Configuring API Gateway Security with CORS and CSRF disabled
+2026-02-06 08:28:55 [main] INFO  c.t.a.config.SecurityConfig - 🌐 Configuring CORS for API Gateway
+2026-02-06 08:28:55 [main] INFO  c.t.a.config.SecurityConfig - ✅ CORS configured: Origins = [http://localhost:3000, http://localhost:5173, http://localhost:4200, http://127.0.0.1:3000, http://127.0.0.1:5173, http://127.0.0.1:4200]
+2026-02-06 08:28:55 [main] INFO  c.t.a.config.SecurityConfig - ✅ API Gateway Security configured - Authentication delegated to downstream services
+2026-02-06 08:28:56 [main] WARN  o.s.c.g.c.GatewayClassPathWarningAutoConfiguration - 
+
+**********************************************************
+
+The artifact spring-cloud-gateway-server is deprecated. It will be removed in the next major release. Please add spring-cloud-gateway-server-webflux dependency.
+
+**********************************************************
+
+
+2026-02-06 08:28:57 [main] INFO  c.t.a.config.WebSocketProxyConfig - Configuring HttpClient for WebSocket proxy support
+2026-02-06 08:28:57 [main] INFO  o.s.c.g.r.RouteDefinitionRouteLocator - Loaded RoutePredicateFactory [After]
+2026-02-06 08:28:57 [main] INFO  o.s.c.g.r.RouteDefinitionRouteLocator - Loaded RoutePredicateFactory [Before]
+2026-02-06 08:28:57 [main] INFO  o.s.c.g.r.RouteDefinitionRouteLocator - Loaded RoutePredicateFactory [Between]
+2026-02-06 08:28:57 [main] INFO  o.s.c.g.r.RouteDefinitionRouteLocator - Loaded RoutePredicateFactory [Cookie]
+2026-02-06 08:28:57 [main] INFO  o.s.c.g.r.RouteDefinitionRouteLocator - Loaded RoutePredicateFactory [Header]
+2026-02-06 08:28:57 [main] INFO  o.s.c.g.r.RouteDefinitionRouteLocator - Loaded RoutePredicateFactory [Host]
+2026-02-06 08:28:57 [main] INFO  o.s.c.g.r.RouteDefinitionRouteLocator - Loaded RoutePredicateFactory [Method]
+2026-02-06 08:28:57 [main] INFO  o.s.c.g.r.RouteDefinitionRouteLocator - Loaded RoutePredicateFactory [Path]
+2026-02-06 08:28:57 [main] INFO  o.s.c.g.r.RouteDefinitionRouteLocator - Loaded RoutePredicateFactory [Query]
+2026-02-06 08:28:57 [main] INFO  o.s.c.g.r.RouteDefinitionRouteLocator - Loaded RoutePredicateFactory [ReadBody]
+2026-02-06 08:28:57 [main] INFO  o.s.c.g.r.RouteDefinitionRouteLocator - Loaded RoutePredicateFactory [RemoteAddr]
+2026-02-06 08:28:57 [main] INFO  o.s.c.g.r.RouteDefinitionRouteLocator - Loaded RoutePredicateFactory [XForwardedRemoteAddr]
+2026-02-06 08:28:57 [main] INFO  o.s.c.g.r.RouteDefinitionRouteLocator - Loaded RoutePredicateFactory [Weight]
+2026-02-06 08:28:57 [main] INFO  o.s.c.g.r.RouteDefinitionRouteLocator - Loaded RoutePredicateFactory [CloudFoundryRouteService]
+2026-02-06 08:28:58 [main] INFO  o.s.b.a.e.web.EndpointLinksResolver - Exposing 7 endpoints beneath base path '/actuator'
+2026-02-06 08:28:59 [main] INFO  o.s.c.n.e.c.DiscoveryClientOptionalArgsConfiguration - Eureka HTTP Client uses RestTemplate.
+2026-02-06 08:28:59 [main] WARN  o.s.c.g.s.w.s.StarterDeprecatedAutoConfiguration - 
+
+**********************************************************
+
+spring-cloud-starter-gateway is deprecated. It will be removed in the next major release. Please use spring-cloud-starter-gateway-server-webflux instead.
+
+**********************************************************
+
+
+2026-02-06 08:28:59 [main] INFO  o.s.c.n.eureka.InstanceInfoFactory - Setting initial instance status as: STARTING
+2026-02-06 08:28:59 [main] INFO  c.netflix.discovery.DiscoveryClient - Initializing Eureka in region us-east-1
+2026-02-06 08:28:59 [main] INFO  c.n.d.s.r.aws.ConfigClusterResolver - Resolving eureka endpoints via configuration
+2026-02-06 08:28:59 [main] INFO  c.netflix.discovery.DiscoveryClient - Disable delta property : false
+2026-02-06 08:28:59 [main] INFO  c.netflix.discovery.DiscoveryClient - Single vip registry refresh property : null
+2026-02-06 08:28:59 [main] INFO  c.netflix.discovery.DiscoveryClient - Force full registry fetch : false
+2026-02-06 08:28:59 [main] INFO  c.netflix.discovery.DiscoveryClient - Application is null : false
+2026-02-06 08:28:59 [main] INFO  c.netflix.discovery.DiscoveryClient - Registered Applications size is zero : true
+2026-02-06 08:28:59 [main] INFO  c.netflix.discovery.DiscoveryClient - Application version is -1: true
+2026-02-06 08:28:59 [main] INFO  c.netflix.discovery.DiscoveryClient - Getting all instance registry info from the eureka server
+2026-02-06 08:29:00 [main] INFO  c.netflix.discovery.DiscoveryClient - The response status is 200
+2026-02-06 08:29:00 [main] INFO  c.netflix.discovery.DiscoveryClient - Starting heartbeat executor: renew interval is: 5
+2026-02-06 08:29:00 [main] INFO  c.n.discovery.InstanceInfoReplicator - InstanceInfoReplicator onDemand update allowed rate per min is 24
+2026-02-06 08:29:00 [main] INFO  c.netflix.discovery.DiscoveryClient - Discovery Client initialized at timestamp 1770346740925 with initial instances count: 1
+2026-02-06 08:29:00 [main] INFO  o.s.c.n.e.s.EurekaServiceRegistry - Registering application API-GATEWAY with eureka with status UP
+2026-02-06 08:29:00 [main] INFO  c.netflix.discovery.DiscoveryClient - Saw local status change event StatusChangeEvent [timestamp=1770346740938, current=UP, previous=STARTING]
+2026-02-06 08:29:00 [DiscoveryClient-InstanceInfoReplicator-%d] INFO  c.netflix.discovery.DiscoveryClient - DiscoveryClient_API-GATEWAY/api-gateway:8080: registering service...
+2026-02-06 08:29:01 [DiscoveryClient-InstanceInfoReplicator-%d] INFO  c.netflix.discovery.DiscoveryClient - DiscoveryClient_API-GATEWAY/api-gateway:8080 - registration status: 204
+2026-02-06 08:29:01 [main] INFO  o.s.b.w.e.netty.NettyWebServer - Netty started on port 8080 (http)
+2026-02-06 08:29:01 [main] INFO  o.s.c.n.e.s.EurekaAutoServiceRegistration - Updating port to 8080
+2026-02-06 08:29:01 [main] INFO  c.t.a.ApiGatewayApplication - Started ApiGatewayApplication in 17.773 seconds (process running for 19.401)
+2026-02-06 08:29:01 [main] WARN  o.s.c.g.c.GatewayServerWebfluxPropertiesMigrationListener - 
+The use of configuration keys that have been renamed was found in the environment:
+
+Property source 'Config resource 'class path resource [application.yaml]' via location 'optional:classpath:/'':
+	Key: spring.cloud.gateway.default-filters[0]
+		Line: 18
+		Replacement: spring.cloud.gateway.server.webflux.default-filters[0]
+	Key: spring.cloud.gateway.default-filters[1].name
+		Line: 19
+		Replacement: spring.cloud.gateway.server.webflux.default-filters[1].name
+	Key: spring.cloud.gateway.default-filters[1].args.retries
+		Line: 21
+		Replacement: spring.cloud.gateway.server.webflux.default-filters[1].args.retries
+	Key: spring.cloud.gateway.default-filters[1].args.methods
+		Line: 22
+		Replacement: spring.cloud.gateway.server.webflux.default-filters[1].args.methods
+	Key: spring.cloud.gateway.default-filters[1].args.backoff.firstbackoff
+		Line: 24
+		Replacement: spring.cloud.gateway.server.webflux.default-filters[1].args.backoff.firstbackoff
+	Key: spring.cloud.gateway.default-filters[1].args.backoff.maxbackoff
+		Line: 25
+		Replacement: spring.cloud.gateway.server.webflux.default-filters[1].args.backoff.maxbackoff
+
+
+Each configuration key has been temporarily mapped to its replacement for your convenience. To silence this warning, please update your configuration to use the new keys.
+
+2026-02-06 08:29:01 [main] WARN  o.s.b.c.p.m.PropertiesMigrationListener - 
+The use of configuration keys that have been renamed was found in the environment:
+
+Property source 'Config resource 'class path resource [application.yaml]' via location 'optional:classpath:/'':
+	Key: logging.file.max-history
+		Line: 232
+		Replacement: logging.logback.rollingpolicy.max-history
+	Key: logging.file.max-size
+		Line: 231
+		Replacement: logging.logback.rollingpolicy.max-file-size
+	Key: management.metrics.export.prometheus.enabled
+		Line: 206
+		Replacement: management.prometheus.metrics.export.enabled
+	Key: spring.cloud.gateway.discovery.locator.enabled
+		Line: 14
+		Replacement: spring.cloud.gateway.server.webflux.discovery.locator.enabled
+	Key: spring.cloud.gateway.discovery.locator.lower-case-service-id
+		Line: 15
+		Replacement: spring.cloud.gateway.server.webflux.discovery.locator.lower-case-service-id
+	Key: spring.cloud.gateway.globalcors.add-to-simple-url-handler-mapping
+		Line: 28
+		Replacement: spring.cloud.gateway.server.webflux.globalcors.add-to-simple-url-handler-mapping
+	Key: spring.cloud.gateway.globalcors.corsconfigurations[/**].allowedorigins[0]
+		Line: 32
+		Replacement: spring.cloud.gateway.server.webflux.globalcors.cors-configurations[/**].allowedorigins[0]
+	Key: spring.cloud.gateway.globalcors.corsconfigurations[/**].allowedorigins[1]
+		Line: 33
+		Replacement: spring.cloud.gateway.server.webflux.globalcors.cors-configurations[/**].allowedorigins[1]
+	Key: spring.cloud.gateway.globalcors.corsconfigurations[/**].allowedorigins[2]
+		Line: 34
+		Replacement: spring.cloud.gateway.server.webflux.globalcors.cors-configurations[/**].allowedorigins[2]
+	Key: spring.cloud.gateway.globalcors.corsconfigurations[/**].allowedorigins[3]
+		Line: 35
+		Replacement: spring.cloud.gateway.server.webflux.globalcors.cors-configurations[/**].allowedorigins[3]
+	Key: spring.cloud.gateway.globalcors.corsconfigurations[/**].allowedorigins[4]
+		Line: 36
+		Replacement: spring.cloud.gateway.server.webflux.globalcors.cors-configurations[/**].allowedorigins[4]
+	Key: spring.cloud.gateway.globalcors.corsconfigurations[/**].allowedmethods[0]
+		Line: 38
+		Replacement: spring.cloud.gateway.server.webflux.globalcors.cors-configurations[/**].allowedmethods[0]
+	Key: spring.cloud.gateway.globalcors.corsconfigurations[/**].allowedmethods[1]
+		Line: 39
+		Replacement: spring.cloud.gateway.server.webflux.globalcors.cors-configurations[/**].allowedmethods[1]
+	Key: spring.cloud.gateway.globalcors.corsconfigurations[/**].allowedmethods[2]
+		Line: 40
+		Replacement: spring.cloud.gateway.server.webflux.globalcors.cors-configurations[/**].allowedmethods[2]
+	Key: spring.cloud.gateway.globalcors.corsconfigurations[/**].allowedmethods[3]
+		Line: 41
+		Replacement: spring.cloud.gateway.server.webflux.globalcors.cors-configurations[/**].allowedmethods[3]
+	Key: spring.cloud.gateway.globalcors.corsconfigurations[/**].allowedmethods[4]
+		Line: 42
+		Replacement: spring.cloud.gateway.server.webflux.globalcors.cors-configurations[/**].allowedmethods[4]
+	Key: spring.cloud.gateway.globalcors.corsconfigurations[/**].allowedmethods[5]
+		Line: 43
+		Replacement: spring.cloud.gateway.server.webflux.globalcors.cors-configurations[/**].allowedmethods[5]
+	Key: spring.cloud.gateway.globalcors.corsconfigurations[/**].allowedmethods[6]
+		Line: 44
+		Replacement: spring.cloud.gateway.server.webflux.globalcors.cors-configurations[/**].allowedmethods[6]
+	Key: spring.cloud.gateway.globalcors.corsconfigurations[/**].allowedheaders
+		Line: 45
+		Replacement: spring.cloud.gateway.server.webflux.globalcors.cors-configurations[/**].allowedheaders
+	Key: spring.cloud.gateway.globalcors.corsconfigurations[/**].allowcredentials
+		Line: 46
+		Replacement: spring.cloud.gateway.server.webflux.globalcors.cors-configurations[/**].allowcredentials
+	Key: spring.cloud.gateway.globalcors.corsconfigurations[/**].maxage
+		Line: 47
+		Replacement: spring.cloud.gateway.server.webflux.globalcors.cors-configurations[/**].maxage
+	Key: spring.cloud.gateway.httpclient.compression
+		Line: 57
+		Replacement: spring.cloud.gateway.server.webflux.httpclient.compression
+	Key: spring.cloud.gateway.httpclient.connect-timeout
+		Line: 50
+		Replacement: spring.cloud.gateway.server.webflux.httpclient.connect-timeout
+	Key: spring.cloud.gateway.httpclient.pool.max-connections
+		Line: 55
+		Replacement: spring.cloud.gateway.server.webflux.httpclient.pool.max-connections
+	Key: spring.cloud.gateway.httpclient.pool.max-idle-time
+		Line: 54
+		Replacement: spring.cloud.gateway.server.webflux.httpclient.pool.max-idle-time
+	Key: spring.cloud.gateway.httpclient.pool.type
+		Line: 53
+		Replacement: spring.cloud.gateway.server.webflux.httpclient.pool.type
+	Key: spring.cloud.gateway.httpclient.response-timeout
+		Line: 51
+		Replacement: spring.cloud.gateway.server.webflux.httpclient.response-timeout
+	Key: spring.cloud.gateway.httpclient.wiretap
+		Line: 56
+		Replacement: spring.cloud.gateway.server.webflux.httpclient.wiretap
+
+
+Each configuration key has been temporarily mapped to its replacement for your convenience. To silence this warning, please update your configuration to use the new keys.
+
+2026-02-06 08:29:01 [main] ERROR o.s.b.c.p.m.PropertiesMigrationListener - 
+The use of configuration keys that are no longer supported was found in the environment:
+
+Property source 'Config resource 'class path resource [application.yaml]' via location 'optional:classpath:/'':
+	Key: management.endpoint.gateway.enabled
+		Line: 202
+		Reason: Replacement key 'management.endpoint.gateway.access' uses an incompatible target type
+
+
+Please refer to the release notes or reference guide for potential alternatives.
+
+2026-02-06 08:31:39 [DiscoveryClient-%d] WARN  c.n.discovery.TimedSupervisorTask - task supervisor timed out
+java.util.concurrent.TimeoutException
+	at java.base/java.util.concurrent.FutureTask.get(FutureTask.java:204)
+	at com.netflix.discovery.TimedSupervisorTask.run(TimedSupervisorTask.java:65)
+	at java.base/java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:539)
+	at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:264)
+	at java.base/java.util.concurrent.ScheduledThreadPoolExecutor$ScheduledFutureTask.run(ScheduledThreadPoolExecutor.java:304)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1136)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:635)
+	at java.base/java.lang.Thread.run(Thread.java:840)
+2026-02-06 08:33:02 [DiscoveryClient-%d] WARN  c.n.discovery.TimedSupervisorTask - task supervisor timed out
+java.util.concurrent.TimeoutException
+	at java.base/java.util.concurrent.FutureTask.get(FutureTask.java:204)
+	at com.netflix.discovery.TimedSupervisorTask.run(TimedSupervisorTask.java:65)
+	at java.base/java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:539)
+	at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:264)
+	at java.base/java.util.concurrent.ScheduledThreadPoolExecutor$ScheduledFutureTask.run(ScheduledThreadPoolExecutor.java:304)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1136)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:635)
+	at java.base/java.lang.Thread.run(Thread.java:840)
+2026-02-06 08:33:07 [DiscoveryClient-%d] WARN  c.n.discovery.TimedSupervisorTask - task supervisor timed out
+java.util.concurrent.TimeoutException
+	at java.base/java.util.concurrent.FutureTask.get(FutureTask.java:204)
+	at com.netflix.discovery.TimedSupervisorTask.run(TimedSupervisorTask.java:65)
+	at java.base/java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:539)
+	at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:264)
+	at java.base/java.util.concurrent.ScheduledThreadPoolExecutor$ScheduledFutureTask.run(ScheduledThreadPoolExecutor.java:304)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1136)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:635)
+	at java.base/java.lang.Thread.run(Thread.java:840)
+2026-02-06 08:33:17 [DiscoveryClient-%d] WARN  c.n.discovery.TimedSupervisorTask - task supervisor timed out
+java.util.concurrent.TimeoutException
+	at java.base/java.util.concurrent.FutureTask.get(FutureTask.java:204)
+	at com.netflix.discovery.TimedSupervisorTask.run(TimedSupervisorTask.java:65)
+	at java.base/java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:539)
+	at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:264)
+	at java.base/java.util.concurrent.ScheduledThreadPoolExecutor$ScheduledFutureTask.run(ScheduledThreadPoolExecutor.java:304)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1136)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:635)
+	at java.base/java.lang.Thread.run(Thread.java:840)
+2026-02-06 08:33:26 [DiscoveryClient-%d] WARN  c.n.discovery.TimedSupervisorTask - task supervisor timed out
+java.util.concurrent.TimeoutException
+	at java.base/java.util.concurrent.FutureTask.get(FutureTask.java:204)
+	at com.netflix.discovery.TimedSupervisorTask.run(TimedSupervisorTask.java:65)
+	at java.base/java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:539)
+	at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:264)
+	at java.base/java.util.concurrent.ScheduledThreadPoolExecutor$ScheduledFutureTask.run(ScheduledThreadPoolExecutor.java:304)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1136)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:635)
+	at java.base/java.lang.Thread.run(Thread.java:840)
+2026-02-06 08:33:45 [DiscoveryClient-%d] WARN  c.n.discovery.TimedSupervisorTask - task supervisor timed out
+java.util.concurrent.TimeoutException
+	at java.base/java.util.concurrent.FutureTask.get(FutureTask.java:204)
+	at com.netflix.discovery.TimedSupervisorTask.run(TimedSupervisorTask.java:65)
+	at java.base/java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:539)
+	at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:264)
+	at java.base/java.util.concurrent.ScheduledThreadPoolExecutor$ScheduledFutureTask.run(ScheduledThreadPoolExecutor.java:304)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1136)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:635)
+	at java.base/java.lang.Thread.run(Thread.java:840)
+2026-02-06 08:33:59 [AsyncResolver-bootstrap-executor-%d] INFO  c.n.d.s.r.aws.ConfigClusterResolver - Resolving eureka endpoints via configuration
+2026-02-06 08:38:59 [AsyncResolver-bootstrap-executor-%d] INFO  c.n.d.s.r.aws.ConfigClusterResolver - Resolving eureka endpoints via configuration
+2026-02-06 08:43:59 [AsyncResolver-bootstrap-executor-%d] INFO  c.n.d.s.r.aws.ConfigClusterResolver - Resolving eureka endpoints via configuration
+2026-02-06 08:48:59 [AsyncResolver-bootstrap-executor-%d] INFO  c.n.d.s.r.aws.ConfigClusterResolver - Resolving eureka endpoints via configuration
