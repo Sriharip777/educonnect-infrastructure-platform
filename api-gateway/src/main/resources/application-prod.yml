@@ -80,7 +80,7 @@ eureka:
   client:
     enabled: true
     service-url:
-      defaultZone: ${EUREKA_URL}
+      defaultZone: ${EUREKA_URL:https://educonservicediscovery-64307221061.asia-south1.run.app}
     registry-fetch-interval-seconds: 5
   instance:
     # CLOUD RUN CONFIGURATION
