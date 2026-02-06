@@ -1,7 +1,7 @@
 server:
   port: ${PORT:8080}
   netty:
-    connection-timeout: ${NETTY_TIMEOUT:30s}
+    connection-timeout: 30s
 
 spring:
   application:
@@ -11,7 +11,7 @@ spring:
     gateway:
       discovery:
         locator:
-          enabled: ${GATEWAY_DISCOVERY_ENABLED:true}
+          enabled: true
           lower-case-service-id: true
 
       routes:
@@ -52,56 +52,71 @@ spring:
       enabled: true
       ribbon:
         enabled: false
+      # CRITICAL: Configure LoadBalancer for HTTPS
+      cache:
+        enabled: false
 
   data:
     redis:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
-      timeout: ${REDIS_TIMEOUT:2000ms}
+      password: ${REDIS_PASSWORD:}
+      timeout: 5000ms
+      connect-timeout: 5000ms
+      ssl: ${REDIS_SSL:false}
+      lettuce:
+        pool:
+          max-active: 10
+          max-idle: 5
+          min-idle: 2
 
 eureka:
   client:
-    enabled: ${EUREKA_CLIENT_ENABLED:true}
+    enabled: true
     service-url:
       defaultZone: ${EUREKA_URL:http://localhost:8761/eureka/}
-    registry-fetch-interval-seconds: ${EUREKA_FETCH_INTERVAL:5}
+    registry-fetch-interval-seconds: 5
     register-with-eureka: true
     fetch-registry: true
+    # CRITICAL for HTTPS
+    eureka-server-connect-timeout-seconds: 10
+    eureka-server-read-timeout-seconds: 10
+
   instance:
-    prefer-ip-address: ${EUREKA_PREFER_IP:true}
+    prefer-ip-address: false
     hostname: ${EUREKA_INSTANCE_HOSTNAME:localhost}
     instance-id: ${spring.application.name}:${random.value}
-    lease-renewal-interval-in-seconds: 5
-    lease-expiration-duration-in-seconds: 10
-    health-check-url-path: /actuator/health
-    status-page-url-path: /actuator/info
+
+    # CLOUD RUN: Use HTTPS for registration
+    non-secure-port-enabled: false
+    secure-port-enabled: true
+    secure-port: 443
+
+    # Health check URLs
+    home-page-url: https://${eureka.instance.hostname}/
+    status-page-url: https://${eureka.instance.hostname}/actuator/info
+    health-check-url: https://${eureka.instance.hostname}/actuator/health
+
+    lease-renewal-interval-in-seconds: 10
+    lease-expiration-duration-in-seconds: 30
 
 jwt:
   secret: ${JWT_SECRET:my-super-secret-jwt-key-for-educonnect-platform-minimum-256-bits-required}
-  expiration: ${JWT_EXPIRATION:86400000}
+  expiration: 86400000
 
 management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics,gateway,prometheus
-      base-path: /actuator
+        include: health,info,metrics,gateway
   endpoint:
     health:
       show-details: always
-      probes:
-        enabled: true
-    gateway:
-      enabled: true
-  health:
-    livenessState:
-      enabled: true
-    readinessState:
-      enabled: true
 
 logging:
   level:
-    root: ${LOG_LEVEL_ROOT:INFO}
-    com.tcon.api_gateway: ${LOG_LEVEL_APP:DEBUG}
-    org.springframework.cloud.gateway: ${LOG_LEVEL_GATEWAY:INFO}
-    org.springframework.cloud.gateway.handler.RoutePredicateHandlerMapping: DEBUG
+    root: INFO
+    com.tcon.api_gateway: DEBUG
+    org.springframework.cloud.gateway: INFO
+    com.netflix.discovery: INFO
+    org.springframework.data.redis: INFO

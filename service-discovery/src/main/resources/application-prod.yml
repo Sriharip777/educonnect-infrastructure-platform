@@ -9,14 +9,25 @@ eureka:
   instance:
     hostname: ${EUREKA_INSTANCE_HOSTNAME:localhost}
     prefer-ip-address: false
+    # Cloud Run uses HTTPS
+    non-secure-port-enabled: false
+    secure-port-enabled: true
+    secure-port: 443
+    home-page-url: https://${eureka.instance.hostname}/
+    status-page-url: https://${eureka.instance.hostname}/actuator/info
+
   client:
     register-with-eureka: false
     fetch-registry: false
     service-url:
-      defaultZone: ${EUREKA_CLIENT_SERVICE_URL:http://${eureka.instance.hostname}:${server.port}/eureka/}
+      defaultZone: https://${eureka.instance.hostname}/eureka/
+
   server:
     enable-self-preservation: false
     eviction-interval-timer-in-ms: 5000
+    # Important for Cloud Run
+    renewal-percent-threshold: 0.49
+    response-cache-update-interval-ms: 3000
 
 management:
   endpoints:
