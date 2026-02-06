@@ -1,13 +1,15 @@
+// java
 package com.tcon.api_gateway.config;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
 import org.springframework.security.web.server.SecurityWebFilterChain;
 import org.springframework.web.cors.CorsConfiguration;
-import org.springframework.web.cors.reactive.CorsConfigurationSource;
+import org.springframework.web.cors.reactive.CorsWebFilter;
 import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource;
 
 import java.util.Arrays;
@@ -18,38 +20,33 @@ import java.util.List;
 @EnableWebFluxSecurity
 public class SecurityConfig {
 
+
     @Bean
     public SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity http) {
-        log.info("🔒 Configuring API Gateway Security with CORS and CSRF disabled");
+        log.info("🔒 Configuring API Gateway Security");
 
         http
-                // Disable CSRF for stateless API
                 .csrf(ServerHttpSecurity.CsrfSpec::disable)
-
-                // Configure CORS
-                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-
-                // Permit all exchanges - JWT validation handled downstream
+                .cors(ServerHttpSecurity.CorsSpec::disable) // Let YAML handle CORS
                 .authorizeExchange(exchange -> exchange
+                        .pathMatchers(HttpMethod.OPTIONS).permitAll()
                         .pathMatchers("/actuator/**", "/fallback/**").permitAll()
+                        .pathMatchers("/api/auth/**", "/auth/**").permitAll()
                         .anyExchange().permitAll()
                 )
-
-                // Disable form login and HTTP basic
                 .httpBasic(ServerHttpSecurity.HttpBasicSpec::disable)
                 .formLogin(ServerHttpSecurity.FormLoginSpec::disable);
-
-        log.info("✅ API Gateway Security configured - Authentication delegated to downstream services");
+        log.info("✅ Security configured - CORS handled by Gateway YAML");
         return http.build();
     }
 
     @Bean
-    public CorsConfigurationSource corsConfigurationSource() {
-        log.info("🌐 Configuring CORS for API Gateway");
+    public CorsWebFilter corsWebFilter() {
+        log.info("🌐 Registering CorsWebFilter for API Gateway");
 
         CorsConfiguration configuration = new CorsConfiguration();
 
-        // Allowed origins
+        // Allow specific local dev origins and wildcard patterns for deployed origins
         configuration.setAllowedOrigins(Arrays.asList(
                 "http://localhost:3000",
                 "http://localhost:5173",
@@ -59,18 +56,14 @@ public class SecurityConfig {
                 "http://127.0.0.1:4200"
         ));
 
-        // Or use patterns for more flexibility
-        // configuration.setAllowedOriginPatterns(List.of("*"));
+        // Allow patterns (useful for dynamic or deployed origins); keeps credentials true
+        configuration.setAllowedOriginPatterns(List.of("*"));
 
-        // Allowed HTTP methods
         configuration.setAllowedMethods(Arrays.asList(
                 "GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS", "HEAD"
         ));
 
-        // Allowed headers
         configuration.setAllowedHeaders(List.of("*"));
-
-        // Exposed headers
         configuration.setExposedHeaders(Arrays.asList(
                 "Authorization",
                 "Content-Type",
@@ -81,16 +74,13 @@ public class SecurityConfig {
                 "X-User-Email"
         ));
 
-        // Allow credentials
         configuration.setAllowCredentials(true);
-
-        // Cache preflight response for 1 hour
         configuration.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
 
-        log.info("✅ CORS configured: Origins = {}", configuration.getAllowedOrigins());
-        return source;
+        log.info("✅ CORS configured");
+        return new CorsWebFilter(source);
     }
 }

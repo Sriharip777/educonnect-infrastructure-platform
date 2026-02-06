@@ -1,5 +1,4 @@
 server:
-  # Cloud Run injects PORT automatically. We default to 8080 for local testing.
   port: ${PORT:8080}
   netty:
     connection-timeout: 10s
@@ -7,6 +6,9 @@ server:
 spring:
   application:
     name: api-gateway
+
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:local}
 
   cloud:
     gateway:
@@ -16,28 +18,15 @@ spring:
           lower-case-service-id: true
 
       routes:
-        # ==========================================
-        # AUTH SERVICE ROUTE (Fixed with StripPrefix)
-        # ==========================================
         - id: auth-service
           uri: lb://AUTH-USER-SERVICE
           predicates:
             - Path=/api/auth/**
           filters:
-            # FIX: Removes the first segment "/api"
-            # Request: /api/auth/login -> Service receives: /auth/login
-            # This is safer than RewritePath for Cloud Run
+            # Use StripPrefix instead of RewritePath (more reliable)
+            # Removes "/api" -> sends "/auth/..." to service
             - StripPrefix=1
-
-            # Remove duplicate CORS headers if Cloud Run load balancer adds them
             - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_UNIQUE
-            - name: Retry
-              args:
-                retries: 3
-                methods: GET,POST
-                backoff:
-                  firstBackoff: 50ms
-                  maxBackoff: 500ms
 
       default-filters:
         - name: Retry
@@ -71,7 +60,6 @@ spring:
 
   data:
     redis:
-      # Use Env Var for Prod, localhost for local
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
       timeout: 2000ms
@@ -80,115 +68,36 @@ eureka:
   client:
     enabled: true
     service-url:
-      defaultZone: ${EUREKA_URL:https://educonservicediscovery-64307221061.asia-south1.run.app}
+      # CRITICAL: Use Env Var in production, localhost for local
+      defaultZone: ${EUREKA_URL:http://localhost:8761/eureka/}
     registry-fetch-interval-seconds: 5
+    register-with-eureka: true
+    fetch-registry: true
   instance:
-    # CLOUD RUN CONFIGURATION
-    # Local: prefer-ip=true
-    # Cloud Run: prefer-ip=false (Uses hostname/public URL)
-    prefer-ip-address: ${EUREKA_PREFER_IP:false}
-
-    # Cloud Run Public URL
+    prefer-ip-address: ${EUREKA_PREFER_IP:true}
     hostname: ${EUREKA_INSTANCE_HOSTNAME:localhost}
-
     instance-id: ${spring.application.name}:${random.value}
     lease-renewal-interval-in-seconds: 5
     lease-expiration-duration-in-seconds: 10
-
-    # Actuator Links
-    health-check-url-path: /actuator/health
-    status-page-url-path: /actuator/info
 
 jwt:
   secret: ${JWT_SECRET:my-super-secret-jwt-key-for-educonnect-platform-minimum-256-bits-required}
   expiration: 86400000
 
-# ==========================================
-# RESILIENCE4J CONFIGURATION
-# ==========================================
-resilience4j:
-  circuitbreaker:
-    configs:
-      default:
-        registerHealthIndicator: true
-        slidingWindowType: COUNT_BASED
-        slidingWindowSize: 10
-        minimumNumberOfCalls: 5
-        permittedNumberOfCallsInHalfOpenState: 3
-        waitDurationInOpenState: 30s
-        failureRateThreshold: 50
-        slowCallRateThreshold: 50
-        slowCallDurationThreshold: 2s
-        automaticTransitionFromOpenToHalfOpenEnabled: true
-        eventConsumerBufferSize: 10
-        recordExceptions:
-          - org.springframework.web.client.HttpServerErrorException
-          - java.util.concurrent.TimeoutException
-          - java.io.IOException
-          - org.springframework.web.reactive.function.client.WebClientResponseException.InternalServerError
-        ignoreExceptions:
-          - org.springframework.web.reactive.function.client.WebClientResponseException.BadRequest
-    instances:
-      auth-service-cb:
-        baseConfig: default
-
-  timelimiter:
-    configs:
-      default:
-        timeoutDuration: 5s
-        cancelRunningFuture: true
-    instances:
-      auth-service-cb:
-        baseConfig: default
-
-  retry:
-    configs:
-      default:
-        maxAttempts: 2
-        waitDuration: 500ms
-        enableExponentialBackoff: true
-        exponentialBackoffMultiplier: 2
-        retryExceptions:
-          - org.springframework.web.client.HttpServerErrorException
-          - java.util.concurrent.TimeoutException
-          - java.io.IOException
-    instances:
-      auth-service-cb:
-        baseConfig: default
-
-rate-limit:
-  enabled: true
-  default-replenish-rate: 100
-  default-burst-capacity: 200
-
 management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics,gateway,prometheus,circuitbreakers
-      base-path: /actuator
+        include: health,info,metrics,gateway,prometheus
   endpoint:
     health:
       show-details: always
     gateway:
-      enabled: true
-  metrics:
-    export:
-      prometheus:
-        enabled: true
-    tags:
-      application: ${spring.application.name}
-  health:
-    circuitbreakers:
-      enabled: true
-    redis:
       enabled: true
 
 logging:
   level:
     root: INFO
     com.tcon.api_gateway: DEBUG
-    org.springframework.cloud.gateway: INFO
-    # Enable this to see exactly where Gateway is routing requests
-    org.springframework.cloud.gateway.route.RouteDefinitionRouteLocator: INFO
+    org.springframework.cloud.gateway: DEBUG
     org.springframework.cloud.gateway.handler.RoutePredicateHandlerMapping: DEBUG
