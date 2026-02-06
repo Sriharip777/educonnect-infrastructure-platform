@@ -1,5 +1,5 @@
 server:
-  # CRITICAL: Cloud Run sets the PORT env var. You must listen on it.
+  # Cloud Run injects PORT automatically. We default to 8080 for local testing.
   port: ${PORT:8080}
   netty:
     connection-timeout: 10s
@@ -16,20 +16,30 @@ spring:
           lower-case-service-id: true
 
       routes:
+        # ==========================================
+        # AUTH SERVICE ROUTE (Fixed with StripPrefix)
+        # ==========================================
         - id: auth-service
           uri: lb://AUTH-USER-SERVICE
           predicates:
             - Path=/api/auth/**
           filters:
-            # FIX 1: Use StripPrefix=1.
-            # Request: /api/auth/login -> Service: /auth/login
-            # This removes the first segment (/api)
+            # FIX: Removes the first segment "/api"
+            # Request: /api/auth/login -> Service receives: /auth/login
+            # This is safer than RewritePath for Cloud Run
             - StripPrefix=1
 
-            # (Removed the broken RewritePath)
+            # Remove duplicate CORS headers if Cloud Run load balancer adds them
+            - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_UNIQUE
+            - name: Retry
+              args:
+                retries: 3
+                methods: GET,POST
+                backoff:
+                  firstBackoff: 50ms
+                  maxBackoff: 500ms
 
       default-filters:
-        - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_UNIQUE
         - name: Retry
           args:
             retries: 2
@@ -50,7 +60,6 @@ spring:
               - DELETE
               - PATCH
               - OPTIONS
-              - HEAD
             allowedHeaders: "*"
             allowCredentials: true
             maxAge: 3600
@@ -62,49 +71,41 @@ spring:
 
   data:
     redis:
+      # Use Env Var for Prod, localhost for local
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
       timeout: 2000ms
-      database: 0
-      lettuce:
-        pool:
-          max-active: 10
-          max-idle: 10
-          min-idle: 2
-          max-wait: 2000ms
-        shutdown-timeout: 200ms
-
-  cache:
-    type: redis
-    redis:
-      time-to-live: 600000
-      cache-null-values: false
 
 eureka:
   client:
     enabled: true
-    register-with-eureka: true
-    fetch-registry: true
     service-url:
       defaultZone: ${EUREKA_URL:http://localhost:8761/eureka/}
     registry-fetch-interval-seconds: 5
   instance:
-    # FIX 2: Dynamic Hostname for Cloud Run
-    # If running locally, prefer IP. If in Cloud Run, use the hostname.
+    # CLOUD RUN CONFIGURATION
+    # Local: prefer-ip=true
+    # Cloud Run: prefer-ip=false (Uses hostname/public URL)
     prefer-ip-address: ${EUREKA_PREFER_IP:false}
+
+    # Cloud Run Public URL
     hostname: ${EUREKA_INSTANCE_HOSTNAME:localhost}
+
     instance-id: ${spring.application.name}:${random.value}
     lease-renewal-interval-in-seconds: 5
     lease-expiration-duration-in-seconds: 10
-    metadata-map:
-      zone: zone1
-      version: 1.0.0
+
+    # Actuator Links
+    health-check-url-path: /actuator/health
+    status-page-url-path: /actuator/info
 
 jwt:
   secret: ${JWT_SECRET:my-super-secret-jwt-key-for-educonnect-platform-minimum-256-bits-required}
   expiration: 86400000
 
-# (Resilience4j and Logging configs remain the same...)
+# ==========================================
+# RESILIENCE4J CONFIGURATION
+# ==========================================
 resilience4j:
   circuitbreaker:
     configs:
@@ -164,12 +165,11 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics,gateway,prometheus,circuitbreakers,circuitbreakerevents
+        include: health,info,metrics,gateway,prometheus,circuitbreakers
       base-path: /actuator
   endpoint:
     health:
       show-details: always
-      show-components: always
     gateway:
       enabled: true
   metrics:
@@ -189,11 +189,6 @@ logging:
     root: INFO
     com.tcon.api_gateway: DEBUG
     org.springframework.cloud.gateway: INFO
+    # Enable this to see exactly where Gateway is routing requests
+    org.springframework.cloud.gateway.route.RouteDefinitionRouteLocator: INFO
     org.springframework.cloud.gateway.handler.RoutePredicateHandlerMapping: DEBUG
-    org.springframework.cloud.loadbalancer: WARN
-    io.github.resilience4j: INFO
-    reactor.netty: WARN
-    io.netty: ERROR
-    org.springframework.data.redis: INFO
-  pattern:
-    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
