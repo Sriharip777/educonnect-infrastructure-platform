@@ -73,13 +73,18 @@ spring:
         ttl: 35s
         capacity: 256
 
-  data:
-    redis:
-      host: localhost
-      port: 6379
-      timeout: 2000ms
-      database: 0
-      lettuce:
+  spring:
+    data:
+      redis:
+        host: redis-15043.c1.us-central1-2.gce.cloud.redislabs.com
+        port: 15043
+        password: Redies@123
+        timeout: 2000ms
+        database: 0
+        ssl:
+          enabled: true
+
+        lettuce:
         pool:
           max-active: 10
           max-idle: 10

@@ -34,10 +34,10 @@ public class AuthenticationFilter implements GlobalFilter, Ordered {
     private static final List<String> PUBLIC_PATHS = List.of(
             "/api/auth/register",
             "/api/auth/login",
-            "/api/auth/forgot-password",
             "/api/auth/refresh-token",
             "/api/auth/verify-email",
-            "/api/auth/reset-password",
+            "/api/auth/password/reset-request",
+            "/api/auth/password/reset",
             "/actuator/**",
             "/eureka/**",
             "/api/public/**"
