@@ -51,6 +51,12 @@ public class AuthenticationFilter implements GlobalFilter, Ordered {
 
         log.debug("🌐 API Gateway: {} {}", method, path);
 
+        // ✅ CRITICAL: Skip OPTIONS requests for CORS preflight
+        if ("OPTIONS".equalsIgnoreCase(method)) {
+            log.debug("✅ OPTIONS request - skipping authentication for CORS preflight");
+            return chain.filter(exchange);
+        }
+
         // Skip JWT validation for public paths
         if (isPublicPath(path)) {
             log.debug("✅ Public path: {}", path);
@@ -142,6 +148,6 @@ public class AuthenticationFilter implements GlobalFilter, Ordered {
 
     @Override
     public int getOrder() {
-        return -100;
+        return 0;
     }
 }
