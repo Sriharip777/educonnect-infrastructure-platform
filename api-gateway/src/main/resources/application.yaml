@@ -206,8 +206,9 @@ logging:
     org.springframework.data.redis: INFO
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
-    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
-  file:
-    name: logs/api-gateway.log
-    max-size: 10MB
-    max-history: 30
+    # ✅ DISABLED: No file logging = No git conflicts!
+  # file:  # <-- COMMENTED OUT
+  #   name: logs/api-gateway.log
+  #   max-size: 10MB
+  #   max-history: 30
+
