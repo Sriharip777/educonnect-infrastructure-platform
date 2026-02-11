@@ -37,20 +37,24 @@ public class GatewayConfig {
         log.info("🚀 Configuring API Gateway Routes with Circuit Breakers, Rate Limiting, and Retry Logic");
 
         return builder.routes()
+                // ===== PASSWORD RESET - NO RATE LIMITING =====
+                .route("auth-password-reset", r -> r
+                        .path("/api/auth/password/reset-request", "/api/auth/password/reset")
+                        .filters(f -> f
+                                .retry(config -> config.setRetries(2)))
+                        .uri("lb://auth-user-service"))
+
                 // ===== Auth User Service (Port 8081) - With Strict Rate Limiting =====
                 .route("auth-service", r -> r
                         .path("/api/auth/**")
                         .filters(f -> f
-                                // Rate limiting for auth endpoints (prevent brute force)
                                 .requestRateLimiter(c -> c
                                         .setRateLimiter(authRateLimiter)
                                         .setKeyResolver(userKeyResolver)
                                         .setDenyEmptyKey(false))
-                                // Circuit breaker
                                 .circuitBreaker(c -> c
                                         .setName("auth-service-cb")
                                         .setFallbackUri("forward:/fallback/auth"))
-                                // Retry logic
                                 .retry(config -> config
                                         .setRetries(2)
                                         .setBackoff(Duration.ofMillis(100), Duration.ofMillis(1000), 2, false)))
