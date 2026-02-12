@@ -9,6 +9,9 @@ spring:
 
   cloud:
     gateway:
+      # ✅ ADD THIS - Enable WebSocket proxying
+      websocket:
+        enabled: true
       discovery:
         locator:
           enabled: true
@@ -25,14 +28,17 @@ spring:
               maxBackoff: 500ms
 
       httpclient:
-        connect-timeout: 5000
-        response-timeout: 10s
+        connect-timeout: 60000
+        response-timeout: 5m
         pool:
           type: elastic
-          max-idle-time: 15s
-          max-connections: 500
+          max-idle-time: 60s
+          max-connections: 1000
         wiretap: false
         compression: true
+        websocket:
+          max-frame-payload-length: 1048576
+          proxy-ping: true
 
     loadbalancer:
       enabled: true
@@ -127,6 +133,7 @@ resilience4j:
         failureRateThreshold: 40
       video-service-cb:
         baseConfig: default
+        websocket-cb:
         slowCallDurationThreshold: 5s
       notification-service-cb:
         baseConfig: default
@@ -145,6 +152,8 @@ resilience4j:
         timeoutDuration: 15s
       video-service-cb:
         timeoutDuration: 20s
+        websocket-cb:
+          timeoutDuration: 60s
 
   retry:
     configs:
@@ -198,6 +207,9 @@ logging:
     root: INFO
     com.tcon.api_gateway: DEBUG
     org.springframework.cloud.gateway: INFO
+    org.springframework.web.socket: TRACE           # ✅ ADD THIS
+    reactor.netty.http.client: DEBUG                # ✅ ADD THIS
+    io.netty.handler.codec.http.websocketx: TRACE   # ✅ ADD THIS
     org.springframework.cloud.gateway.handler.RoutePredicateHandlerMapping: DEBUG
     org.springframework.cloud.loadbalancer: WARN
     io.github.resilience4j: INFO
@@ -211,4 +223,3 @@ logging:
   #   name: logs/api-gateway.log
   #   max-size: 10MB
   #   max-history: 30
-

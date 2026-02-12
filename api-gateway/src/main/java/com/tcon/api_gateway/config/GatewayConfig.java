@@ -96,6 +96,16 @@ public class GatewayConfig {
                                 .retry(config -> config.setRetries(2)))
                         .uri("lb://auth-user-service"))
 
+                .route("user-service", r -> r
+                        .path("/user-service/api/users/**")  // ✅ Match /user-service/api/users/batch
+                        .filters(f -> f
+                                .stripPrefix(1)  // ✅ Remove /user-service, forward /api/users/batch
+                                .circuitBreaker(c -> c
+                                        .setName("auth-service-cb")
+                                        .setFallbackUri("forward:/fallback/user"))
+                                .retry(config -> config.setRetries(2)))
+                        .uri("lb://auth-user-service"))
+
                 // ===== Learning Management Service (Port 8082) =====
                 .route("course-service", r -> r
                         .path("/api/courses/**")
