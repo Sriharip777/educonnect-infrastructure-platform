@@ -96,6 +96,7 @@ public class GatewayConfig {
                                 .retry(config -> config.setRetries(2)))
                         .uri("lb://auth-user-service"))
 
+                // ✅ CORRECT GATEWAY ROUTE
                 .route("user-service", r -> r
                         .path("/user-service/api/users/**")  // ✅ Match /user-service/api/users/batch
                         .filters(f -> f

@@ -1,51 +1,56 @@
 package com.tcon.api_gateway.config;
 
-import io.netty.channel.ChannelOption;
-import io.netty.handler.timeout.ReadTimeoutHandler;
-import io.netty.handler.timeout.WriteTimeoutHandler;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.cloud.gateway.config.HttpClientCustomizer;
+import org.springframework.cloud.gateway.filter.headers.HttpHeadersFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import reactor.netty.http.client.HttpClient;
+import org.springframework.http.HttpHeaders;
+import org.springframework.web.server.ServerWebExchange;
 
-import java.time.Duration;
-import java.util.concurrent.TimeUnit;
-
-/**
- * WebSocket Proxy Configuration
- * Customizes HttpClient for WebSocket connections through Gateway
- */
 @Slf4j
 @Configuration
 public class WebSocketProxyConfig {
 
+    /**
+     * Custom headers filter for WebSocket proxying
+     * Preserves WebSocket upgrade headers
+     */
     @Bean
-    public HttpClientCustomizer httpClientCustomizer() {
-        return httpClient -> {
-            log.info("Configuring HttpClient for WebSocket proxy support");
+    public HttpHeadersFilter webSocketHeadersFilter() {
+        return new HttpHeadersFilter() {
+            @Override
+            public HttpHeaders filter(HttpHeaders input, ServerWebExchange exchange) {
+                HttpHeaders filtered = new HttpHeaders();
+                filtered.putAll(input);
 
-            return httpClient
-                    // Connection timeout: 60 seconds
-                    .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 60000)
+                // Preserve WebSocket upgrade headers
+                String upgrade = input.getFirst(HttpHeaders.UPGRADE);
+                if ("websocket".equalsIgnoreCase(upgrade)) {
+                    log.debug("🔄 [Gateway] Preserving WebSocket upgrade headers");
 
-                    // Keep connection alive
-                    .option(ChannelOption.SO_KEEPALIVE, true)
+                    // Keep essential WebSocket headers
+                    preserveHeader(input, filtered, HttpHeaders.UPGRADE);
+                    preserveHeader(input, filtered, HttpHeaders.CONNECTION);
+                    preserveHeader(input, filtered, "Sec-WebSocket-Key");
+                    preserveHeader(input, filtered, "Sec-WebSocket-Version");
+                    preserveHeader(input, filtered, "Sec-WebSocket-Protocol");
+                    preserveHeader(input, filtered, "Sec-WebSocket-Extensions");
+                }
 
-                    // Response timeout: 60 seconds
-                    .responseTimeout(Duration.ofSeconds(60))
+                return filtered;
+            }
 
-                    // Add read/write timeout handlers
-                    .doOnConnected(connection -> {
-                        log.debug("WebSocket connection established, adding timeout handlers");
-                        connection.addHandlerLast(new ReadTimeoutHandler(60, TimeUnit.SECONDS))
-                                .addHandlerLast(new WriteTimeoutHandler(60, TimeUnit.SECONDS));
-                    })
+            private void preserveHeader(HttpHeaders input, HttpHeaders output, String headerName) {
+                String value = input.getFirst(headerName);
+                if (value != null) {
+                    output.set(headerName, value);
+                }
+            }
 
-                    // Log connection events
-                    .doOnDisconnected(connection ->
-                            log.debug("WebSocket connection disconnected")
-                    );
+            @Override
+            public boolean supports(Type type) {
+                return type == Type.RESPONSE;
+            }
         };
     }
 }
