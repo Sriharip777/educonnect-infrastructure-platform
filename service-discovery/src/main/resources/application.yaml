@@ -1,32 +1,60 @@
 server:
-  port: 8761
+  # Cloud Run injects PORT; locally default to 8761
+  port: ${PORT:8761}
 
 spring:
   application:
-    name: service-discovery
+    name: ${SPRING_APPLICATION_NAME:service-discovery}
+
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:default}
 
 eureka:
   instance:
-    hostname: localhost
+    # In Cloud Run, set EUREKA_INSTANCE_HOSTNAME to your run URL
+    # e.g. educonservicediscovery-64307221061.asia-south1.run.app
+    hostname: ${EUREKA_INSTANCE_HOSTNAME:localhost}
+    prefer-ip-address: ${EUREKA_PREFER_IP:false}
+
+    # HTTP/HTTPS exposure
+    # Local: true/false, Production: false/true
+    non-secure-port-enabled: ${EUREKA_NON_SECURE_PORT_ENABLED:true}
+    secure-port-enabled: ${EUREKA_SECURE_PORT_ENABLED:false}
+    secure-port: 443
+
+    # UI & health links - dynamic based on environment
+    home-page-url: ${EUREKA_HOME_PAGE_URL:http://${eureka.instance.hostname}:${server.port}/}
+    status-page-url: ${EUREKA_STATUS_PAGE_URL:http://${eureka.instance.hostname}:${server.port}/actuator/info}
+    health-check-url: ${EUREKA_HEALTH_CHECK_URL:http://${eureka.instance.hostname}:${server.port}/actuator/health}
+
   client:
+    # Eureka server should NOT register to itself
     register-with-eureka: false
     fetch-registry: false
     service-url:
-      defaultZone: http://${eureka.instance.hostname}:${server.port}/eureka/
+      # Local: http, Production: https
+      defaultZone: ${EUREKA_DEFAULT_ZONE:http://${eureka.instance.hostname}:${server.port}/eureka/}
+
   server:
-    enable-self-preservation: false
-    eviction-interval-timer-in-ms: 5000
+    enable-self-preservation: ${EUREKA_SELF_PRESERVATION:false}
+    eviction-interval-timer-in-ms: ${EUREKA_EVICTION_INTERVAL:5000}
+    renewal-percent-threshold: 0.49
+    response-cache-update-interval-ms: 3000
 
 management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics
+        include: health,info,metrics,env
+      base-path: /actuator
   endpoint:
     health:
       show-details: always
 
 logging:
   level:
-    com.netflix.eureka: INFO
-    com.netflix.discovery: INFO
+    root: ${LOG_LEVEL_ROOT:INFO}
+    com.netflix.eureka: ${LOG_LEVEL_EUREKA:INFO}
+    com.netflix.discovery: ${LOG_LEVEL_DISCOVERY:INFO}
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
