@@ -5,10 +5,13 @@ server:
 
 spring:
   application:
-    name: api-gateway
+    name: ${SPRING_APPLICATION_NAME:api-gateway}
 
   cloud:
     gateway:
+      websocket:
+        enabled: true  # ✅ Added for WebSocket support
+
       discovery:
         locator:
           enabled: true
@@ -23,7 +26,16 @@ spring:
             - StripPrefix=1
             - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_UNIQUE
 
+        # ✅ Add WebSocket route if needed
+        - id: video-websocket
+          uri: lb://VIDEO-SERVICE
+          predicates:
+            - Path=/ws/**
+          filters:
+            - StripPrefix=0
+
       default-filters:
+        - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_UNIQUE
         - name: Retry
           args:
             retries: 2
@@ -31,6 +43,13 @@ spring:
             backoff:
               firstBackoff: 50ms
               maxBackoff: 500ms
+
+      httpclient:
+        connect-timeout: 60000
+        response-timeout: 5m
+        websocket:
+          max-frame-payload-length: 1048576
+          proxy-ping: true
 
       globalcors:
         add-to-simple-url-handler-mapping: true
@@ -52,23 +71,24 @@ spring:
       enabled: true
       ribbon:
         enabled: false
-      # CRITICAL: Configure LoadBalancer for HTTPS
       cache:
-        enabled: false
+        enabled: false  # Disabled for Cloud Run dynamic scaling
 
   data:
     redis:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
-      password: ${REDIS_PASSWORD:}
+      password: ${REDIS_PASSWORD}
       timeout: 5000ms
       connect-timeout: 5000ms
-      ssl: ${REDIS_SSL:false}
+      ssl:
+        enabled: ${REDIS_SSL_ENABLED:false}  # ✅ Fixed structure
       lettuce:
         pool:
           max-active: 10
           max-idle: 5
           min-idle: 2
+          max-wait: 2000ms
 
 eureka:
   client:
@@ -78,21 +98,20 @@ eureka:
     registry-fetch-interval-seconds: 5
     register-with-eureka: true
     fetch-registry: true
-    # CRITICAL for HTTPS
     eureka-server-connect-timeout-seconds: 10
     eureka-server-read-timeout-seconds: 10
 
   instance:
-    prefer-ip-address: false
+    prefer-ip-address: ${EUREKA_PREFER_IP:false}
     hostname: ${EUREKA_INSTANCE_HOSTNAME:localhost}
     instance-id: ${spring.application.name}:${random.value}
 
-    # CLOUD RUN: Use HTTPS for registration
-    non-secure-port-enabled: false
-    secure-port-enabled: true
-    secure-port: 443
+    # Cloud Run HTTPS configuration
+    non-secure-port-enabled: ${EUREKA_NON_SECURE_PORT_ENABLED:false}
+    secure-port-enabled: ${EUREKA_SECURE_PORT_ENABLED:true}
+    secure-port: ${EUREKA_SECURE_PORT:443}
 
-    # Health check URLs
+    # Health check URLs (HTTPS)
     home-page-url: https://${eureka.instance.hostname}/
     status-page-url: https://${eureka.instance.hostname}/actuator/info
     health-check-url: https://${eureka.instance.hostname}/actuator/health
@@ -101,22 +120,27 @@ eureka:
     lease-expiration-duration-in-seconds: 30
 
 jwt:
-  secret: ${JWT_SECRET:my-super-secret-jwt-key-for-educonnect-platform-minimum-256-bits-required}
-  expiration: 86400000
+  secret: ${JWT_SECRET}  # ✅ Removed default - must be set via env var
+  expiration: ${JWT_EXPIRATION:86400000}
 
 management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics,gateway
+        include: health,info,metrics,gateway,prometheus
+      base-path: /actuator
   endpoint:
     health:
       show-details: always
+    gateway:
+      enabled: true
 
 logging:
   level:
-    root: INFO
-    com.tcon.api_gateway: DEBUG
+    root: ${LOG_LEVEL_ROOT:INFO}
+    com.tcon.api_gateway: ${LOG_LEVEL_APP:INFO}
     org.springframework.cloud.gateway: INFO
     com.netflix.discovery: INFO
-    org.springframework.data.redis: INFO
+    org.springframework.data.redis: WARN
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
