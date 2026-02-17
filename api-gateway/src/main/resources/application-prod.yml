@@ -9,149 +9,151 @@ spring:
 
   cloud:
     gateway:
-      websocket:
-        enabled: true
+      # ✅ FIXED: Use new server.webflux namespace
+      server:
+        webflux:
+          websocket:
+            enabled: true
 
-      discovery:
-        locator:
-          enabled: true
-          lower-case-service-id: true
+          discovery:
+            locator:
+              enabled: true
+              lower-case-service-id: true
 
-      routes:
-        # AUTH SERVICE (matches GatewayConfig)
-        - id: auth-password-reset
-          uri: lb://auth-user-service
-          predicates:
-            - Path=/api/auth/password/reset-request,/api/auth/password/reset
-          filters:
+          routes:
+            # AUTH PASSWORD RESET (No rate limiting)
+            - id: auth-password-reset
+              uri: lb://auth-user-service
+              predicates:
+                - Path=/api/auth/password/reset-request,/api/auth/password/reset
+              filters:
+                - name: Retry
+                  args:
+                    retries: 2
+
+            # AUTH SERVICE (With rate limiting)
+            - id: auth-service
+              uri: lb://auth-user-service
+              predicates:
+                - Path=/api/auth/**
+              filters:
+                # ✅ FIXED: Use bean reference syntax
+                - name: RequestRateLimiter
+                  args:
+                    rate-limiter: "#{@authRateLimiter}"
+                    key-resolver: "#{@userKeyResolver}"
+                    deny-empty-key: false
+                - name: CircuitBreaker
+                  args:
+                    name: auth-service-cb
+                    fallbackUri: forward:/fallback/auth
+                - name: Retry
+                  args:
+                    retries: 2
+                    backoff:
+                      firstBackoff: 100ms
+                      maxBackoff: 1000ms
+                      factor: 2
+                      basedOnPreviousValue: false
+
+            - id: student-service
+              uri: lb://auth-user-service
+              predicates:
+                - Path=/api/student/**
+              filters:
+                - name: CircuitBreaker
+                  args:
+                    name: auth-service-cb
+                    fallbackUri: forward:/fallback/user
+                - name: Retry
+                  args:
+                    retries: 2
+
+            - id: teacher-service
+              uri: lb://auth-user-service
+              predicates:
+                - Path=/api/teacher/**
+              filters:
+                - name: CircuitBreaker
+                  args:
+                    name: auth-service-cb
+                    fallbackUri: forward:/fallback/user
+                - name: Retry
+                  args:
+                    retries: 2
+
+            - id: parent-service
+              uri: lb://auth-user-service
+              predicates:
+                - Path=/api/parent/**
+              filters:
+                - name: CircuitBreaker
+                  args:
+                    name: auth-service-cb
+                    fallbackUri: forward:/fallback/user
+                - name: Retry
+                  args:
+                    retries: 2
+
+            - id: admin-service
+              uri: lb://auth-user-service
+              predicates:
+                - Path=/api/admin/**
+              filters:
+                - name: CircuitBreaker
+                  args:
+                    name: auth-service-cb
+                    fallbackUri: forward:/fallback/user
+                - name: Retry
+                  args:
+                    retries: 2
+
+            - id: user-service
+              uri: lb://auth-user-service
+              predicates:
+                - Path=/user-service/api/users/**
+              filters:
+                - StripPrefix=1
+                - name: CircuitBreaker
+                  args:
+                    name: auth-service-cb
+                    fallbackUri: forward:/fallback/user
+                - name: Retry
+                  args:
+                    retries: 2
+
+          default-filters:
+            - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_UNIQUE
             - name: Retry
               args:
                 retries: 2
-
-        - id: auth-service
-          uri: lb://auth-user-service
-          predicates:
-            - Path=/api/auth/**
-          filters:
-            - name: RequestRateLimiter
-              args:
-                rateLimiter: authRateLimiter
-                keyResolver: "#{@userKeyResolver}"
-                denyEmptyKey: false
-            - name: CircuitBreaker
-              args:
-                name: auth-service-cb
-                fallbackUri: forward:/fallback/auth
-            - name: Retry
-              args:
-                retries: 2
+                methods: GET,POST,PUT,DELETE
                 backoff:
-                  firstBackoff: 100ms
-                  maxBackoff: 1000ms
-                  factor: 2
-                  basedOnPreviousValue: false
+                  firstBackoff: 50ms
+                  maxBackoff: 500ms
 
-        - id: student-service
-          uri: lb://auth-user-service
-          predicates:
-            - Path=/api/student/**
-          filters:
-            - name: CircuitBreaker
-              args:
-                name: auth-service-cb
-                fallbackUri: forward:/fallback/user
-            - name: Retry
-              args:
-                retries: 2
+          httpclient:
+            connect-timeout: 60000
+            response-timeout: 5m
+            websocket:
+              max-frame-payload-length: 1048576
+              proxy-ping: true
 
-        - id: teacher-service
-          uri: lb://auth-user-service
-          predicates:
-            - Path=/api/teacher/**
-          filters:
-            - name: CircuitBreaker
-              args:
-                name: auth-service-cb
-                fallbackUri: forward:/fallback/user
-            - name: Retry
-              args:
-                retries: 2
-
-        - id: parent-service
-          uri: lb://auth-user-service
-          predicates:
-            - Path=/api/parent/**
-          filters:
-            - name: CircuitBreaker
-              args:
-                name: auth-service-cb
-                fallbackUri: forward:/fallback/user
-            - name: Retry
-              args:
-                retries: 2
-
-        - id: admin-service
-          uri: lb://auth-user-service
-          predicates:
-            - Path=/api/admin/**
-          filters:
-            - name: CircuitBreaker
-              args:
-                name: auth-service-cb
-                fallbackUri: forward:/fallback/user
-            - name: Retry
-              args:
-                retries: 2
-
-        - id: user-service
-          uri: lb://auth-user-service
-          predicates:
-            - Path=/user-service/api/users/**
-          filters:
-            - StripPrefix=1
-            - name: CircuitBreaker
-              args:
-                name: auth-service-cb
-                fallbackUri: forward:/fallback/user
-            - name: Retry
-              args:
-                retries: 2
-
-        # Other services (learning, communication, financial, notification, integration, content)
-        # map exactly as in your GatewayConfig (same lb:// names)
-
-      default-filters:
-        - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_UNIQUE
-        - name: Retry
-          args:
-            retries: 2
-            methods: GET,POST,PUT,DELETE
-            backoff:
-              firstBackoff: 50ms
-              maxBackoff: 500ms
-
-      httpclient:
-        connect-timeout: 60000
-        response-timeout: 5m
-        websocket:
-          max-frame-payload-length: 1048576
-          proxy-ping: true
-
-      globalcors:
-        add-to-simple-url-handler-mapping: true
-        corsConfigurations:
-          '[/**]':
-            allowedOriginPatterns: "*"
-            allowedMethods:
-              - GET
-              - POST
-              - PUT
-              - DELETE
-              - PATCH
-              - OPTIONS
-            allowedHeaders: "*"
-            allowCredentials: true
-            maxAge: 3600
+          globalcors:
+            add-to-simple-url-handler-mapping: true
+            cors-configurations:
+              '[/**]':
+                allowedOriginPatterns: "*"
+                allowedMethods:
+                  - GET
+                  - POST
+                  - PUT
+                  - DELETE
+                  - PATCH
+                  - OPTIONS
+                allowedHeaders: "*"
+                allowCredentials: true
+                maxAge: 3600
 
     loadbalancer:
       enabled: true
@@ -178,7 +180,7 @@ spring:
 
 eureka:
   client:
-    enabled: true
+    enabled: ${EUREKA_ENABLED:true}
     service-url:
       defaultZone: ${EUREKA_URL:http://localhost:8761/eureka/}
     registry-fetch-interval-seconds: 5
@@ -188,38 +190,34 @@ eureka:
     eureka-server-read-timeout-seconds: 10
 
   instance:
-    prefer-ip-address: ${EUREKA_PREFER_IP:false}
+    prefer-ip-address: ${EUREKA_PREFER_IP:true}
     hostname: ${EUREKA_INSTANCE_HOSTNAME:localhost}
     instance-id: ${spring.application.name}:${random.value}
-    non-secure-port-enabled: ${EUREKA_NON_SECURE_PORT_ENABLED:false}
-    secure-port-enabled: ${EUREKA_SECURE_PORT_ENABLED:true}
+    non-secure-port-enabled: ${EUREKA_NON_SECURE_PORT_ENABLED:true}
+    secure-port-enabled: ${EUREKA_SECURE_PORT_ENABLED:false}
     secure-port: ${EUREKA_SECURE_PORT:443}
-    home-page-url: https://${eureka.instance.hostname}/
-    status-page-url: https://${eureka.instance.hostname}/actuator/info
-    health-check-url: https://${eureka.instance.hostname}/actuator/health
     lease-renewal-interval-in-seconds: 10
     lease-expiration-duration-in-seconds: 30
 
 jwt:
-  secret: ${JWT_SECRET}
+  secret: ${JWT_SECRET:my-super-secret-jwt-key-for-educonnect-platform-minimum-256-bits-required-default-local}
   expiration: ${JWT_EXPIRATION:86400000}
 
 management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics,gateway,prometheus
+        include: health,info,metrics,prometheus
       base-path: /actuator
   endpoint:
     health:
       show-details: always
-    gateway:
-      enabled: true
+    # ✅ FIXED: Removed gateway.enabled (incompatible in new version)
 
 logging:
   level:
     root: ${LOG_LEVEL_ROOT:INFO}
-    com.tcon.api_gateway: ${LOG_LEVEL_APP:INFO}
+    com.tcon.api_gateway: ${LOG_LEVEL_APP:DEBUG}
     org.springframework.cloud.gateway: INFO
     com.netflix.discovery: INFO
     org.springframework.data.redis: WARN
