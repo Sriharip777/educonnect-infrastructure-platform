@@ -10,7 +10,7 @@ spring:
   cloud:
     gateway:
       websocket:
-        enabled: true  # ✅ Added for WebSocket support
+        enabled: true
 
       discovery:
         locator:
@@ -18,21 +18,107 @@ spring:
           lower-case-service-id: true
 
       routes:
+        # AUTH SERVICE (matches GatewayConfig)
+        - id: auth-password-reset
+          uri: lb://auth-user-service
+          predicates:
+            - Path=/api/auth/password/reset-request,/api/auth/password/reset
+          filters:
+            - name: Retry
+              args:
+                retries: 2
+
         - id: auth-service
-          uri: lb://AUTH-USER-SERVICE
+          uri: lb://auth-user-service
           predicates:
             - Path=/api/auth/**
           filters:
-            - StripPrefix=1
-            - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_UNIQUE
+            - name: RequestRateLimiter
+              args:
+                rateLimiter: authRateLimiter
+                keyResolver: "#{@userKeyResolver}"
+                denyEmptyKey: false
+            - name: CircuitBreaker
+              args:
+                name: auth-service-cb
+                fallbackUri: forward:/fallback/auth
+            - name: Retry
+              args:
+                retries: 2
+                backoff:
+                  firstBackoff: 100ms
+                  maxBackoff: 1000ms
+                  factor: 2
+                  basedOnPreviousValue: false
 
-        # ✅ Add WebSocket route if needed
-        - id: video-websocket
-          uri: lb://VIDEO-SERVICE
+        - id: student-service
+          uri: lb://auth-user-service
           predicates:
-            - Path=/ws/**
+            - Path=/api/student/**
           filters:
-            - StripPrefix=0
+            - name: CircuitBreaker
+              args:
+                name: auth-service-cb
+                fallbackUri: forward:/fallback/user
+            - name: Retry
+              args:
+                retries: 2
+
+        - id: teacher-service
+          uri: lb://auth-user-service
+          predicates:
+            - Path=/api/teacher/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: auth-service-cb
+                fallbackUri: forward:/fallback/user
+            - name: Retry
+              args:
+                retries: 2
+
+        - id: parent-service
+          uri: lb://auth-user-service
+          predicates:
+            - Path=/api/parent/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: auth-service-cb
+                fallbackUri: forward:/fallback/user
+            - name: Retry
+              args:
+                retries: 2
+
+        - id: admin-service
+          uri: lb://auth-user-service
+          predicates:
+            - Path=/api/admin/**
+          filters:
+            - name: CircuitBreaker
+              args:
+                name: auth-service-cb
+                fallbackUri: forward:/fallback/user
+            - name: Retry
+              args:
+                retries: 2
+
+        - id: user-service
+          uri: lb://auth-user-service
+          predicates:
+            - Path=/user-service/api/users/**
+          filters:
+            - StripPrefix=1
+            - name: CircuitBreaker
+              args:
+                name: auth-service-cb
+                fallbackUri: forward:/fallback/user
+            - name: Retry
+              args:
+                retries: 2
+
+        # Other services (learning, communication, financial, notification, integration, content)
+        # map exactly as in your GatewayConfig (same lb:// names)
 
       default-filters:
         - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_UNIQUE
@@ -72,17 +158,17 @@ spring:
       ribbon:
         enabled: false
       cache:
-        enabled: false  # Disabled for Cloud Run dynamic scaling
+        enabled: false
 
   data:
     redis:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
-      password: ${REDIS_PASSWORD}
+      password: ${REDIS_PASSWORD:}
       timeout: 5000ms
       connect-timeout: 5000ms
       ssl:
-        enabled: ${REDIS_SSL_ENABLED:false}  # ✅ Fixed structure
+        enabled: ${REDIS_SSL_ENABLED:false}
       lettuce:
         pool:
           max-active: 10
@@ -105,22 +191,17 @@ eureka:
     prefer-ip-address: ${EUREKA_PREFER_IP:false}
     hostname: ${EUREKA_INSTANCE_HOSTNAME:localhost}
     instance-id: ${spring.application.name}:${random.value}
-
-    # Cloud Run HTTPS configuration
     non-secure-port-enabled: ${EUREKA_NON_SECURE_PORT_ENABLED:false}
     secure-port-enabled: ${EUREKA_SECURE_PORT_ENABLED:true}
     secure-port: ${EUREKA_SECURE_PORT:443}
-
-    # Health check URLs (HTTPS)
     home-page-url: https://${eureka.instance.hostname}/
     status-page-url: https://${eureka.instance.hostname}/actuator/info
     health-check-url: https://${eureka.instance.hostname}/actuator/health
-
     lease-renewal-interval-in-seconds: 10
     lease-expiration-duration-in-seconds: 30
 
 jwt:
-  secret: ${JWT_SECRET}  # ✅ Removed default - must be set via env var
+  secret: ${JWT_SECRET}
   expiration: ${JWT_EXPIRATION:86400000}
 
 management:
