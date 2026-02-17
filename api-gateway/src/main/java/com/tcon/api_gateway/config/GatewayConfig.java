@@ -145,6 +145,18 @@ public class GatewayConfig {
                                         .setFallbackUri("forward:/fallback/websocket")))
                         .uri("lb:ws://communication-service"))
 
+                // ✅ NEW: Whiteboard Service Routes
+                .route("whiteboard-service", r -> r
+                        .path("/api/whiteboard/**")
+                        .filters(f -> f
+                                .circuitBreaker(c -> c
+                                        .setName("video-service-cb")
+                                        .setFallbackUri("forward:/fallback/whiteboard"))
+                                .retry(config -> config
+                                        .setRetries(2)
+                                        .setBackoff(Duration.ofMillis(100), Duration.ofMillis(1000), 2, false)))
+                        .uri("lb://communication-service"))
+
                 .route("video-service", r -> r
                         .path("/api/video/**")
                         .filters(f -> f
