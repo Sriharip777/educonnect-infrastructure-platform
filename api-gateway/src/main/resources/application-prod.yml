@@ -11,18 +11,15 @@ spring:
     gateway:
       server:
         webflux:
-          # WebSocket support
           websocket:
             enabled: true
 
-          # We define routes in Java (GatewayConfig), so no YAML routes here.
-          # DISCOVERY LOCATOR DISABLED (no Eureka on gateway)
+          # We define routes in Java (GatewayConfig), not in YAML
           discovery:
             locator:
-              enabled: false
+              enabled: true          # ✅ enable discovery-based routing if you ever use it
               lower-case-service-id: true
 
-          # Global filters (applied to all routes created in GatewayConfig)
           default-filters:
             - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_UNIQUE
             - name: Retry
@@ -33,7 +30,6 @@ spring:
                   firstBackoff: 50ms
                   maxBackoff: 500ms
 
-          # HTTP client settings
           httpclient:
             connect-timeout: 60000
             response-timeout: 5m
@@ -41,7 +37,6 @@ spring:
               max-frame-payload-length: 1048576
               proxy-ping: true
 
-          # Global CORS
           globalcors:
             add-to-simple-url-handler-mapping: true
             cors-configurations:
@@ -70,8 +65,8 @@ spring:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
       password: ${REDIS_PASSWORD:}
-      timeout: 5000ms
-      connect-timeout: 5000ms
+      timeout: ${REDIS_TIMEOUT:5000ms}
+      connect-timeout: ${REDIS_TIMEOUT:5000ms}
       ssl:
         enabled: ${REDIS_SSL_ENABLED:false}
       lettuce:
@@ -81,23 +76,30 @@ spring:
           min-idle: 2
           max-wait: 2000ms
 
-# === EUREKA DISABLED ON GATEWAY (AVOID THREAD/REGISTRATION ERRORS) ===
 eureka:
   client:
-    enabled: false
-    register-with-eureka: false
-    fetch-registry: false
+    enabled: true                        # ✅ enable Eureka client
+    register-with-eureka: true
+    fetch-registry: true
+    service-url:
+      defaultZone: ${EUREKA_URL}         # e.g. https://educonservicediscovery-.../eureka/
+    registry-fetch-interval-seconds: 30
+    eureka-server-connect-timeout-seconds: 10
+    eureka-server-read-timeout-seconds: 10
+
   instance:
-    prefer-ip-address: true
+    prefer-ip-address: ${EUREKA_PREFER_IP:false}
     hostname: ${EUREKA_INSTANCE_HOSTNAME:localhost}
     instance-id: ${spring.application.name}:${random.value}
-    non-secure-port-enabled: true
-    secure-port-enabled: false
-    secure-port: 443
+    non-secure-port-enabled: ${EUREKA_NON_SECURE_PORT_ENABLED:false}
+    secure-port-enabled: ${EUREKA_SECURE_PORT_ENABLED:true}
+    secure-port: ${EUREKA_SECURE_PORT:443}
+    home-page-url: https://${eureka.instance.hostname}/
+    status-page-url: https://${eureka.instance.hostname}/actuator/info
+    health-check-url: https://${eureka.instance.hostname}/actuator/health
     lease-renewal-interval-in-seconds: 10
     lease-expiration-duration-in-seconds: 30
 
-# JWT used by AuthenticationFilter
 jwt:
   secret: ${JWT_SECRET:my-super-secret-jwt-key-for-educonnect-platform-minimum-256-bits-required-default-local}
   expiration: ${JWT_EXPIRATION:86400000}
