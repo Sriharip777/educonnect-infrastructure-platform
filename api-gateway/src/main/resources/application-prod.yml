@@ -14,7 +14,7 @@ spring:
           websocket:
             enabled: true
 
-          # Enable discovery locator so lb:// routes work
+          # Enable discovery for lb:// support
           discovery:
             locator:
               enabled: true
@@ -76,7 +76,7 @@ spring:
           min-idle: 2
           max-wait: 2000ms
 
-# Eureka Client Configuration (Cloud Run)
+# Eureka Client: MUST be configured for HTTPS/Hostname routing on Cloud Run
 eureka:
   client:
     enabled: true
@@ -89,19 +89,19 @@ eureka:
     eureka-server-read-timeout-seconds: 10
 
   instance:
-    # 🔴 KEY FIX: Use Hostname for Cloud Run routing
+    # CRITICAL for Cloud Run: Use hostname, not IP
     prefer-ip-address: false
     hostname: ${EUREKA_INSTANCE_HOSTNAME}
 
-    # Instance ID must be uniquezz
+    # Unique ID
     instance-id: ${spring.application.name}:${random.value}
 
-    # 🔴 KEY FIX: Register as Secure HTTPS Service (Port 443)
+    # CRITICAL: Force HTTPS (port 443)
     non-secure-port-enabled: false
     secure-port-enabled: true
     secure-port: 443
 
-    # Health check URLs using public hostname
+    # Public URLs for Eureka Dashboard
     home-page-url: https://${eureka.instance.hostname}/
     status-page-url: https://${eureka.instance.hostname}/actuator/info
     health-check-url: https://${eureka.instance.hostname}/actuator/health
