@@ -25,7 +25,7 @@ public class GatewayConfig {
     // Inject Key Resolver for rate limiting
     private final KeyResolver userKeyResolver;
 
-    // Inject custom rate limiters
+    // Inject custom rate limiters (optional - only if you want to use them)
     @Qualifier("authRateLimiter")
     private final RedisRateLimiter authRateLimiter;
 
@@ -96,11 +96,11 @@ public class GatewayConfig {
                                 .retry(config -> config.setRetries(2)))
                         .uri("lb://auth-user-service"))
 
-                // ===== USER SERVICE =====
+                // ✅ CORRECT GATEWAY ROUTE
                 .route("user-service", r -> r
-                        .path("/user-service/api/users/**")
+                        .path("/user-service/api/users/**")  // ✅ Match /user-service/api/users/batch
                         .filters(f -> f
-                                .stripPrefix(1)
+                                .stripPrefix(1)  // ✅ Remove /user-service, forward /api/users/batch
                                 .circuitBreaker(c -> c
                                         .setName("auth-service-cb")
                                         .setFallbackUri("forward:/fallback/user"))
@@ -176,7 +176,7 @@ public class GatewayConfig {
                                 .retry(config -> config.setRetries(2)))
                         .uri("lb://communication-service"))
 
-                // ===== Financial Service (Port 8084) =====
+                // ===== Financial Service (Port 8084) - With Strict Rate Limiting =====
                 .route("payment-service", r -> r
                         .path("/api/payments/**", "/api/refunds/**")
                         .filters(f -> f
@@ -250,22 +250,40 @@ public class GatewayConfig {
 
     /**
      * Default Circuit Breaker Configuration
+     * Applied to all routes unless overridden
      */
     @Bean
     public Customizer<ReactiveResilience4JCircuitBreakerFactory> defaultCustomizer() {
+        log.info("🔧 Configuring Default Circuit Breaker Settings");
+
         return factory -> factory.configureDefault(id -> new Resilience4JConfigBuilder(id)
                 .circuitBreakerConfig(CircuitBreakerConfig.custom()
+                        // Sliding window configuration
                         .slidingWindowType(CircuitBreakerConfig.SlidingWindowType.COUNT_BASED)
                         .slidingWindowSize(10)
                         .minimumNumberOfCalls(5)
+
+                        // Failure thresholds
                         .failureRateThreshold(50.0f)
                         .slowCallRateThreshold(50.0f)
                         .slowCallDurationThreshold(Duration.ofSeconds(2))
+
+                        // Half-open state
                         .permittedNumberOfCallsInHalfOpenState(5)
                         .waitDurationInOpenState(Duration.ofSeconds(30))
                         .automaticTransitionFromOpenToHalfOpenEnabled(true)
-                        .recordExceptions(Exception.class, RuntimeException.class)
-                        .ignoreExceptions(IllegalArgumentException.class)
+
+                        // Exceptions to record as failures
+                        .recordExceptions(
+                                Exception.class,
+                                RuntimeException.class
+                        )
+
+                        // Exceptions to ignore (not counted as failures)
+                        .ignoreExceptions(
+                                IllegalArgumentException.class
+                        )
+
                         .build())
                 .timeLimiterConfig(TimeLimiterConfig.custom()
                         .timeoutDuration(Duration.ofSeconds(5))
@@ -275,53 +293,58 @@ public class GatewayConfig {
     }
 
     /**
-     * Custom Circuit Breaker for Payment Service
+     * Custom Circuit Breaker for Payment Service (More restrictive)
      */
     @Bean
     public Customizer<ReactiveResilience4JCircuitBreakerFactory> paymentCircuitBreakerCustomizer() {
+        log.info("🔧 Configuring Payment Circuit Breaker Settings");
+
         return factory -> factory.configure(builder -> builder
                 .circuitBreakerConfig(CircuitBreakerConfig.custom()
                         .slidingWindowSize(20)
                         .minimumNumberOfCalls(10)
-                        .failureRateThreshold(40.0f)
-                        .waitDurationInOpenState(Duration.ofSeconds(60))
+                        .failureRateThreshold(40.0f)  // More sensitive
+                        .waitDurationInOpenState(Duration.ofSeconds(60))  // Longer wait
                         .slowCallDurationThreshold(Duration.ofSeconds(3))
                         .slowCallRateThreshold(40.0f)
                         .permittedNumberOfCallsInHalfOpenState(3)
                         .automaticTransitionFromOpenToHalfOpenEnabled(true)
                         .build())
                 .timeLimiterConfig(TimeLimiterConfig.custom()
-                        .timeoutDuration(Duration.ofSeconds(15))
+                        .timeoutDuration(Duration.ofSeconds(15))  // Longer timeout for payments
                         .cancelRunningFuture(true)
                         .build())
                 .build(), "payment-service-cb");
     }
 
     /**
-     * Custom Circuit Breaker for Video Service
+     * Custom Circuit Breaker for Video Service (More lenient)
      */
     @Bean
     public Customizer<ReactiveResilience4JCircuitBreakerFactory> videoCircuitBreakerCustomizer() {
+        log.info("🔧 Configuring Video Circuit Breaker Settings");
+
         return factory -> factory.configure(builder -> builder
                 .circuitBreakerConfig(CircuitBreakerConfig.custom()
                         .slidingWindowSize(15)
                         .minimumNumberOfCalls(8)
-                        .failureRateThreshold(60.0f)
+                        .failureRateThreshold(60.0f)  // More lenient
                         .waitDurationInOpenState(Duration.ofSeconds(45))
-                        .slowCallDurationThreshold(Duration.ofSeconds(5))
+                        .slowCallDurationThreshold(Duration.ofSeconds(5))  // Video calls can be slow
                         .slowCallRateThreshold(60.0f)
                         .permittedNumberOfCallsInHalfOpenState(4)
                         .automaticTransitionFromOpenToHalfOpenEnabled(true)
                         .build())
                 .timeLimiterConfig(TimeLimiterConfig.custom()
-                        .timeoutDuration(Duration.ofSeconds(20))
+                        .timeoutDuration(Duration.ofSeconds(20))  // Longer timeout for video
                         .cancelRunningFuture(true)
                         .build())
                 .build(), "video-service-cb");
     }
-
     @Bean
     public Customizer<ReactiveResilience4JCircuitBreakerFactory> messagingCircuitBreakerCustomizer() {
+        log.info("🔧 Configuring Messaging Circuit Breaker Settings");
+
         return factory -> factory.configure(builder -> builder
                 .circuitBreakerConfig(CircuitBreakerConfig.custom()
                         .slidingWindowSize(10)
@@ -339,4 +362,6 @@ public class GatewayConfig {
                         .build())
                 .build(), "messaging-service-cb");
     }
+
 }
+
