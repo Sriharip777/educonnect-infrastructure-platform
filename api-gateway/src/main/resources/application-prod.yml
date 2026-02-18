@@ -14,10 +14,10 @@ spring:
           websocket:
             enabled: true
 
-          # We define routes in Java (GatewayConfig), not in YAML
+          # Enable discovery locator so lb:// routes work
           discovery:
             locator:
-              enabled: true          # ✅ enable discovery-based routing if you ever use it
+              enabled: true
               lower-case-service-id: true
 
           default-filters:
@@ -76,27 +76,36 @@ spring:
           min-idle: 2
           max-wait: 2000ms
 
+# Eureka Client Configuration (Cloud Run)
 eureka:
   client:
-    enabled: true                        # ✅ enable Eureka client
+    enabled: true
     register-with-eureka: true
     fetch-registry: true
     service-url:
-      defaultZone: ${EUREKA_URL}         # e.g. https://educonservicediscovery-.../eureka/
+      defaultZone: ${EUREKA_URL}
     registry-fetch-interval-seconds: 30
     eureka-server-connect-timeout-seconds: 10
     eureka-server-read-timeout-seconds: 10
 
   instance:
-    prefer-ip-address: ${EUREKA_PREFER_IP:false}
-    hostname: ${EUREKA_INSTANCE_HOSTNAME:localhost}
+    # 🔴 KEY FIX: Use Hostname for Cloud Run routing
+    prefer-ip-address: false
+    hostname: ${EUREKA_INSTANCE_HOSTNAME}
+
+    # Instance ID must be uniquezz
     instance-id: ${spring.application.name}:${random.value}
-    non-secure-port-enabled: ${EUREKA_NON_SECURE_PORT_ENABLED:false}
-    secure-port-enabled: ${EUREKA_SECURE_PORT_ENABLED:true}
-    secure-port: ${EUREKA_SECURE_PORT:443}
+
+    # 🔴 KEY FIX: Register as Secure HTTPS Service (Port 443)
+    non-secure-port-enabled: false
+    secure-port-enabled: true
+    secure-port: 443
+
+    # Health check URLs using public hostname
     home-page-url: https://${eureka.instance.hostname}/
     status-page-url: https://${eureka.instance.hostname}/actuator/info
     health-check-url: https://${eureka.instance.hostname}/actuator/health
+
     lease-renewal-interval-in-seconds: 10
     lease-expiration-duration-in-seconds: 30
 
