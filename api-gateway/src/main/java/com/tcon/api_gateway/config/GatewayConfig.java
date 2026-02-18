@@ -22,8 +22,10 @@ import java.time.Duration;
 @RequiredArgsConstructor
 public class GatewayConfig {
 
+    // Inject Key Resolver for rate limiting
     private final KeyResolver userKeyResolver;
 
+    // Inject custom rate limiters
     @Qualifier("authRateLimiter")
     private final RedisRateLimiter authRateLimiter;
 
@@ -32,18 +34,17 @@ public class GatewayConfig {
 
     @Bean
     public RouteLocator customRouteLocator(RouteLocatorBuilder builder) {
-        log.info("🚀 Configuring API Gateway Routes for Cloud Run (HTTPS Load Balancing)");
+        log.info("🚀 Configuring API Gateway Routes with Circuit Breakers, Rate Limiting, and Retry Logic");
 
         return builder.routes()
-                // ===== PASSWORD RESET =====
+                // ===== PASSWORD RESET - NO RATE LIMITING =====
                 .route("auth-password-reset", r -> r
                         .path("/api/auth/password/reset-request", "/api/auth/password/reset")
                         .filters(f -> f
-                                .retry(config -> config.setRetries(2))
-                                .secureHeaders()) // Ensure HTTPS headers
+                                .retry(config -> config.setRetries(2)))
                         .uri("lb://auth-user-service"))
 
-                // ===== AUTH SERVICE =====
+                // ===== Auth User Service (Port 8081) - With Strict Rate Limiting =====
                 .route("auth-service", r -> r
                         .path("/api/auth/**")
                         .filters(f -> f
@@ -56,52 +57,43 @@ public class GatewayConfig {
                                         .setFallbackUri("forward:/fallback/auth"))
                                 .retry(config -> config
                                         .setRetries(2)
-                                        .setBackoff(Duration.ofMillis(100), Duration.ofMillis(1000), 2, false))
-                                .secureHeaders())
+                                        .setBackoff(Duration.ofMillis(100), Duration.ofMillis(1000), 2, false)))
                         .uri("lb://auth-user-service"))
 
-                // ===== STUDENT SERVICE =====
                 .route("student-service", r -> r
                         .path("/api/student/**")
                         .filters(f -> f
                                 .circuitBreaker(c -> c
                                         .setName("auth-service-cb")
                                         .setFallbackUri("forward:/fallback/user"))
-                                .retry(config -> config.setRetries(2))
-                                .secureHeaders())
+                                .retry(config -> config.setRetries(2)))
                         .uri("lb://auth-user-service"))
 
-                // ===== TEACHER SERVICE =====
                 .route("teacher-service", r -> r
                         .path("/api/teacher/**")
                         .filters(f -> f
                                 .circuitBreaker(c -> c
                                         .setName("auth-service-cb")
                                         .setFallbackUri("forward:/fallback/user"))
-                                .retry(config -> config.setRetries(2))
-                                .secureHeaders())
+                                .retry(config -> config.setRetries(2)))
                         .uri("lb://auth-user-service"))
 
-                // ===== PARENT SERVICE =====
                 .route("parent-service", r -> r
                         .path("/api/parent/**")
                         .filters(f -> f
                                 .circuitBreaker(c -> c
                                         .setName("auth-service-cb")
                                         .setFallbackUri("forward:/fallback/user"))
-                                .retry(config -> config.setRetries(2))
-                                .secureHeaders())
+                                .retry(config -> config.setRetries(2)))
                         .uri("lb://auth-user-service"))
 
-                // ===== ADMIN SERVICE =====
                 .route("admin-service", r -> r
                         .path("/api/admin/**")
                         .filters(f -> f
                                 .circuitBreaker(c -> c
                                         .setName("auth-service-cb")
                                         .setFallbackUri("forward:/fallback/user"))
-                                .retry(config -> config.setRetries(2))
-                                .secureHeaders())
+                                .retry(config -> config.setRetries(2)))
                         .uri("lb://auth-user-service"))
 
                 // ===== USER SERVICE =====
@@ -112,19 +104,17 @@ public class GatewayConfig {
                                 .circuitBreaker(c -> c
                                         .setName("auth-service-cb")
                                         .setFallbackUri("forward:/fallback/user"))
-                                .retry(config -> config.setRetries(2))
-                                .secureHeaders())
+                                .retry(config -> config.setRetries(2)))
                         .uri("lb://auth-user-service"))
 
-                // ===== LEARNING SERVICE =====
+                // ===== Learning Management Service (Port 8082) =====
                 .route("course-service", r -> r
                         .path("/api/courses/**")
                         .filters(f -> f
                                 .circuitBreaker(c -> c
                                         .setName("booking-service-cb")
                                         .setFallbackUri("forward:/fallback/course"))
-                                .retry(config -> config.setRetries(2))
-                                .secureHeaders())
+                                .retry(config -> config.setRetries(2)))
                         .uri("lb://learning-management-service"))
 
                 .route("booking-service", r -> r
@@ -133,8 +123,7 @@ public class GatewayConfig {
                                 .circuitBreaker(c -> c
                                         .setName("booking-service-cb")
                                         .setFallbackUri("forward:/fallback/booking"))
-                                .retry(config -> config.setRetries(2))
-                                .secureHeaders())
+                                .retry(config -> config.setRetries(2)))
                         .uri("lb://learning-management-service"))
 
                 .route("demo-service", r -> r
@@ -143,19 +132,18 @@ public class GatewayConfig {
                                 .circuitBreaker(c -> c
                                         .setName("booking-service-cb")
                                         .setFallbackUri("forward:/fallback/demo"))
-                                .retry(config -> config.setRetries(2))
-                                .secureHeaders())
+                                .retry(config -> config.setRetries(2)))
                         .uri("lb://learning-management-service"))
 
-                // ===== COMMUNICATION SERVICE =====
+                // ===== Communication Service (Port 8083) =====
+                // WebSocket Route (MUST BE FIRST!)
                 .route("communication-ws", r -> r
                         .path("/ws-messaging/**")
                         .filters(f -> f
                                 .circuitBreaker(c -> c
                                         .setName("video-service-cb")
-                                        .setFallbackUri("forward:/fallback/websocket"))
-                                .secureHeaders())
-                        .uri("lb:wss://communication-service")) // WSS for Secure WebSocket
+                                        .setFallbackUri("forward:/fallback/websocket")))
+                        .uri("lb:ws://communication-service"))
 
                 // ✅ NEW: Whiteboard Service Routes
                 .route("whiteboard-service", r -> r
@@ -175,9 +163,9 @@ public class GatewayConfig {
                                 .circuitBreaker(c -> c
                                         .setName("video-service-cb")
                                         .setFallbackUri("forward:/fallback/video"))
-                                .retry(config -> config.setRetries(2))
-                                .secureHeaders())
+                                .retry(config -> config.setRetries(2)))
                         .uri("lb://communication-service"))
+
 
                 .route("messaging-service", r -> r
                         .path("/api/messages/**", "/api/conversations/**")
@@ -185,25 +173,26 @@ public class GatewayConfig {
                                 .circuitBreaker(c -> c
                                         .setName("messaging-service-cb")
                                         .setFallbackUri("forward:/fallback/message"))
-                                .retry(config -> config.setRetries(2))
-                                .secureHeaders())
+                                .retry(config -> config.setRetries(2)))
                         .uri("lb://communication-service"))
 
-                // ===== FINANCIAL SERVICE =====
+                // ===== Financial Service (Port 8084) =====
                 .route("payment-service", r -> r
                         .path("/api/payments/**", "/api/refunds/**")
                         .filters(f -> f
+                                // Strict rate limiting for payments
                                 .requestRateLimiter(c -> c
                                         .setRateLimiter(paymentRateLimiter)
                                         .setKeyResolver(userKeyResolver)
                                         .setDenyEmptyKey(false))
+                                // Circuit breaker
                                 .circuitBreaker(c -> c
                                         .setName("payment-service-cb")
                                         .setFallbackUri("forward:/fallback/payment"))
+                                // More aggressive retry for payments
                                 .retry(config -> config
                                         .setRetries(3)
-                                        .setBackoff(Duration.ofMillis(200), Duration.ofMillis(2000), 2, false))
-                                .secureHeaders())
+                                        .setBackoff(Duration.ofMillis(200), Duration.ofMillis(2000), 2, false)))
                         .uri("lb://financial-service"))
 
                 .route("payout-service", r -> r
@@ -216,55 +205,52 @@ public class GatewayConfig {
                                 .circuitBreaker(c -> c
                                         .setName("payment-service-cb")
                                         .setFallbackUri("forward:/fallback/payout"))
-                                .retry(config -> config.setRetries(2))
-                                .secureHeaders())
+                                .retry(config -> config.setRetries(2)))
                         .uri("lb://financial-service"))
 
-                // ===== NOTIFICATION SERVICE =====
+                // ===== Notification Service (Port 8085) =====
                 .route("notification-service", r -> r
                         .path("/api/notifications/**")
                         .filters(f -> f
                                 .circuitBreaker(c -> c
                                         .setName("notification-service-cb")
                                         .setFallbackUri("forward:/fallback/notification"))
-                                .retry(config -> config.setRetries(2))
-                                .secureHeaders())
+                                .retry(config -> config.setRetries(2)))
                         .uri("lb://notification-service"))
 
-                // ===== INTEGRATION SERVICE =====
+                // ===== Integration Service (Port 8086) =====
                 .route("integration-service", r -> r
                         .path("/api/files/**", "/api/calendar/**", "/api/referrals/**", "/api/analytics/**")
                         .filters(f -> f
                                 .circuitBreaker(c -> c
                                         .setName("integration-service-cb")
                                         .setFallbackUri("forward:/fallback/integration"))
-                                .retry(config -> config.setRetries(2))
-                                .secureHeaders())
+                                .retry(config -> config.setRetries(2)))
                         .uri("lb://integration-service"))
 
-                // ===== CONTENT SERVICE =====
+                // ===== Content Service (Port 8087) =====
                 .route("content-service", r -> r
                         .path("/api/recordings/**", "/api/reviews/**", "/api/materials/**", "/api/assignments/**")
                         .filters(f -> f
                                 .circuitBreaker(c -> c
                                         .setName("content-service-cb")
                                         .setFallbackUri("forward:/fallback/content"))
-                                .retry(config -> config.setRetries(2))
-                                .secureHeaders())
+                                .retry(config -> config.setRetries(2)))
                         .uri("lb://content-service"))
 
-                // ===== ACTUATOR =====
+                // ===== Actuator and Health Check Endpoints =====
                 .route("actuator", r -> r
                         .path("/actuator/**")
                         .filters(f -> f
-                                .retry(config -> config.setRetries(1))
-                                .secureHeaders())
+                                .retry(config -> config.setRetries(1)))
                         .uri("lb://auth-user-service"))
 
                 .build();
     }
 
-    // Default Circuit Breaker Config
+    /**
+     * Default Circuit Breaker Configuration
+     */
     @Bean
     public Customizer<ReactiveResilience4JCircuitBreakerFactory> defaultCustomizer() {
         return factory -> factory.configureDefault(id -> new Resilience4JConfigBuilder(id)
@@ -288,7 +274,9 @@ public class GatewayConfig {
                 .build());
     }
 
-    // Payment Circuit Breaker
+    /**
+     * Custom Circuit Breaker for Payment Service
+     */
     @Bean
     public Customizer<ReactiveResilience4JCircuitBreakerFactory> paymentCircuitBreakerCustomizer() {
         return factory -> factory.configure(builder -> builder
@@ -309,7 +297,9 @@ public class GatewayConfig {
                 .build(), "payment-service-cb");
     }
 
-    // Video Circuit Breaker
+    /**
+     * Custom Circuit Breaker for Video Service
+     */
     @Bean
     public Customizer<ReactiveResilience4JCircuitBreakerFactory> videoCircuitBreakerCustomizer() {
         return factory -> factory.configure(builder -> builder
@@ -330,7 +320,6 @@ public class GatewayConfig {
                 .build(), "video-service-cb");
     }
 
-    // Messaging Circuit Breaker
     @Bean
     public Customizer<ReactiveResilience4JCircuitBreakerFactory> messagingCircuitBreakerCustomizer() {
         return factory -> factory.configure(builder -> builder
