@@ -9,119 +9,20 @@ spring:
 
   cloud:
     gateway:
-      # ✅ FIXED: Use new server.webflux namespace
       server:
         webflux:
+          # WebSocket support
           websocket:
             enabled: true
 
+          # We define routes in Java (GatewayConfig), so no YAML routes here.
+          # DISCOVERY LOCATOR DISABLED (no Eureka on gateway)
           discovery:
             locator:
-              enabled: true
+              enabled: false
               lower-case-service-id: true
 
-          routes:
-            # AUTH PASSWORD RESET (No rate limiting)
-            - id: auth-password-reset
-              uri: lb://auth-user-service
-              predicates:
-                - Path=/api/auth/password/reset-request,/api/auth/password/reset
-              filters:
-                - name: Retry
-                  args:
-                    retries: 2
-
-            # AUTH SERVICE (With rate limiting)
-            - id: auth-service
-              uri: lb://auth-user-service
-              predicates:
-                - Path=/api/auth/**
-              filters:
-                # ✅ FIXED: Use bean reference syntax
-                - name: RequestRateLimiter
-                  args:
-                    rate-limiter: "#{@authRateLimiter}"
-                    key-resolver: "#{@userKeyResolver}"
-                    deny-empty-key: false
-                - name: CircuitBreaker
-                  args:
-                    name: auth-service-cb
-                    fallbackUri: forward:/fallback/auth
-                - name: Retry
-                  args:
-                    retries: 2
-                    backoff:
-                      firstBackoff: 100ms
-                      maxBackoff: 1000ms
-                      factor: 2
-                      basedOnPreviousValue: false
-
-            - id: student-service
-              uri: lb://auth-user-service
-              predicates:
-                - Path=/api/student/**
-              filters:
-                - name: CircuitBreaker
-                  args:
-                    name: auth-service-cb
-                    fallbackUri: forward:/fallback/user
-                - name: Retry
-                  args:
-                    retries: 2
-
-            - id: teacher-service
-              uri: lb://auth-user-service
-              predicates:
-                - Path=/api/teacher/**
-              filters:
-                - name: CircuitBreaker
-                  args:
-                    name: auth-service-cb
-                    fallbackUri: forward:/fallback/user
-                - name: Retry
-                  args:
-                    retries: 2
-
-            - id: parent-service
-              uri: lb://auth-user-service
-              predicates:
-                - Path=/api/parent/**
-              filters:
-                - name: CircuitBreaker
-                  args:
-                    name: auth-service-cb
-                    fallbackUri: forward:/fallback/user
-                - name: Retry
-                  args:
-                    retries: 2
-
-            - id: admin-service
-              uri: lb://auth-user-service
-              predicates:
-                - Path=/api/admin/**
-              filters:
-                - name: CircuitBreaker
-                  args:
-                    name: auth-service-cb
-                    fallbackUri: forward:/fallback/user
-                - name: Retry
-                  args:
-                    retries: 2
-
-            - id: user-service
-              uri: lb://auth-user-service
-              predicates:
-                - Path=/user-service/api/users/**
-              filters:
-                - StripPrefix=1
-                - name: CircuitBreaker
-                  args:
-                    name: auth-service-cb
-                    fallbackUri: forward:/fallback/user
-                - name: Retry
-                  args:
-                    retries: 2
-
+          # Global filters (applied to all routes created in GatewayConfig)
           default-filters:
             - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_UNIQUE
             - name: Retry
@@ -132,6 +33,7 @@ spring:
                   firstBackoff: 50ms
                   maxBackoff: 500ms
 
+          # HTTP client settings
           httpclient:
             connect-timeout: 60000
             response-timeout: 5m
@@ -139,6 +41,7 @@ spring:
               max-frame-payload-length: 1048576
               proxy-ping: true
 
+          # Global CORS
           globalcors:
             add-to-simple-url-handler-mapping: true
             cors-configurations:
@@ -178,27 +81,23 @@ spring:
           min-idle: 2
           max-wait: 2000ms
 
+# === EUREKA DISABLED ON GATEWAY (AVOID THREAD/REGISTRATION ERRORS) ===
 eureka:
   client:
-    enabled: ${EUREKA_ENABLED:true}
-    service-url:
-      defaultZone: ${EUREKA_URL:http://localhost:8761/eureka/}
-    registry-fetch-interval-seconds: 5
-    register-with-eureka: true
-    fetch-registry: true
-    eureka-server-connect-timeout-seconds: 10
-    eureka-server-read-timeout-seconds: 10
-
+    enabled: false
+    register-with-eureka: false
+    fetch-registry: false
   instance:
-    prefer-ip-address: ${EUREKA_PREFER_IP:true}
+    prefer-ip-address: true
     hostname: ${EUREKA_INSTANCE_HOSTNAME:localhost}
     instance-id: ${spring.application.name}:${random.value}
-    non-secure-port-enabled: ${EUREKA_NON_SECURE_PORT_ENABLED:true}
-    secure-port-enabled: ${EUREKA_SECURE_PORT_ENABLED:false}
-    secure-port: ${EUREKA_SECURE_PORT:443}
+    non-secure-port-enabled: true
+    secure-port-enabled: false
+    secure-port: 443
     lease-renewal-interval-in-seconds: 10
     lease-expiration-duration-in-seconds: 30
 
+# JWT used by AuthenticationFilter
 jwt:
   secret: ${JWT_SECRET:my-super-secret-jwt-key-for-educonnect-platform-minimum-256-bits-required-default-local}
   expiration: ${JWT_EXPIRATION:86400000}
@@ -212,7 +111,6 @@ management:
   endpoint:
     health:
       show-details: always
-    # ✅ FIXED: Removed gateway.enabled (incompatible in new version)
 
 logging:
   level:
