@@ -1,73 +1,83 @@
+# ============================================================================
+# API GATEWAY - PRODUCTION CONFIG (CLOUD RUN)
+# ============================================================================
 server:
-  port: ${PORT:8080}
+  port: 8080
   netty:
     connection-timeout: 30s
 
 spring:
   application:
-    name: ${SPRING_APPLICATION_NAME:api-gateway}
+    name: api-gateway
+
+  main:
+    web-application-type: reactive
 
   cloud:
+    # Disable Spring Cloud Bootstrap / Config Server
+    bootstrap:
+      enabled: false
+    config:
+      enabled: false
+
     gateway:
-      server:
-        webflux:
-          websocket:
-            enabled: true
+      # WebSocket support
+      websocket:
+        enabled: true
 
-          discovery:
-            locator:
-              enabled: true
-              lower-case-service-id: true
+      # We are using Java-based RouteLocator (GatewayConfig),
+      # so DO NOT define routes here to avoid duplication.
 
-          default-filters:
-            - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_UNIQUE
-            - name: Retry
-              args:
-                retries: 2
-                methods: GET,POST,PUT,DELETE
-                backoff:
-                  firstBackoff: 50ms
-                  maxBackoff: 500ms
+      default-filters:
+        - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_UNIQUE
+        - name: Retry
+          args:
+            retries: 2
+            methods: GET,POST,PUT,DELETE
+            backoff:
+              firstBackoff: 50ms
+              maxBackoff: 500ms
 
-          httpclient:
-            connect-timeout: 60000
-            response-timeout: 5m
-            websocket:
-              max-frame-payload-length: 1048576
-              proxy-ping: true
+      httpclient:
+        connect-timeout: 60000
+        response-timeout: 5m
+        websocket:
+          max-frame-payload-length: 1048576
+          proxy-ping: true
 
-          globalcors:
-            add-to-simple-url-handler-mapping: true
-            cors-configurations:
-              '[/**]':
-                allowedOriginPatterns: "*"
-                allowedMethods:
-                  - GET
-                  - POST
-                  - PUT
-                  - DELETE
-                  - PATCH
-                  - OPTIONS
-                allowedHeaders: "*"
-                allowCredentials: true
-                maxAge: 3600
+      globalcors:
+        add-to-simple-url-handler-mapping: true
+        cors-configurations:
+          '[/**]':
+            allowedOriginPatterns: "*"
+            allowedMethods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - PATCH
+              - OPTIONS
+            allowedHeaders: "*"
+            allowCredentials: true
+            maxAge: 3600
 
-    loadbalancer:
-      enabled: true
-      ribbon:
-        enabled: false
-      cache:
-        enabled: false
+  loadbalancer:
+    enabled: true
+    ribbon:
+      enabled: false
+    cache:
+      enabled: false
 
   data:
     redis:
-      host: ${REDIS_HOST:localhost}
-      port: ${REDIS_PORT:6379}
-      password: ${REDIS_PASSWORD:}
-      timeout: ${REDIS_TIMEOUT:5000ms}
-      connect-timeout: ${REDIS_TIMEOUT:5000ms}
+      # PRODUCTION REDIS CONFIG
+      host: redis-15043.c1.us-central1-2.gce.cloud.redislabs.com
+      port: 15043
+      password: Redies@123
+      timeout: 5000ms
+      connect-timeout: 5000ms
       ssl:
-        enabled: ${REDIS_SSL_ENABLED:false}
+        enabled: true
       lettuce:
         pool:
           max-active: 10
@@ -75,20 +85,25 @@ spring:
           min-idle: 2
           max-wait: 2000ms
 
+# ============================================================================
+# EUREKA - SERVICE DISCOVERY
+# ============================================================================
+
 eureka:
   client:
     enabled: true
     register-with-eureka: true
     fetch-registry: true
     service-url:
-      defaultZone: ${EUREKA_URL}
+      # Your discovery service on Cloud Run
+      defaultZone: https://educonservicediscovery-64307221061.asia-south1.run.app/eureka/
     registry-fetch-interval-seconds: 30
     eureka-server-connect-timeout-seconds: 10
     eureka-server-read-timeout-seconds: 10
 
   instance:
     prefer-ip-address: false
-    hostname: ${EUREKA_INSTANCE_HOSTNAME}
+    hostname: educonapigateway-64307221061.asia-south1.run.app
     instance-id: ${spring.application.name}:${random.value}
     non-secure-port-enabled: false
     secure-port-enabled: true
@@ -99,9 +114,17 @@ eureka:
     lease-renewal-interval-in-seconds: 10
     lease-expiration-duration-in-seconds: 30
 
+# ============================================================================
+# JWT
+# ============================================================================
+
 jwt:
-  secret: ${JWT_SECRET:my-super-secret-jwt-key-for-educonnect-platform-minimum-256-bits-required-default-local}
-  expiration: ${JWT_EXPIRATION:86400000}
+  secret: my-super-secret-jwt-key-for-educonnect-platform-minimum-256-bits-required
+  expiration: 86400000
+
+# ============================================================================
+# ACTUATOR / MONITORING
+# ============================================================================
 
 management:
   endpoints:
@@ -113,10 +136,14 @@ management:
     health:
       show-details: always
 
+# ============================================================================
+# LOGGING
+# ============================================================================
+
 logging:
   level:
-    root: ${LOG_LEVEL_ROOT:INFO}
-    com.tcon.api_gateway: ${LOG_LEVEL_APP:DEBUG}
+    root: INFO
+    com.tcon.api_gateway: DEBUG
     org.springframework.cloud.gateway: INFO
     com.netflix.discovery: INFO
     org.springframework.data.redis: WARN
