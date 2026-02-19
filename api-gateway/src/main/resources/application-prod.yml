@@ -64,17 +64,17 @@ spring:
 
   data:
     redis:
-      host: redis-15043.c1.us-central1-2.gce.cloud.redislabs.com
-      port: 15043
-      password: Redies@123
-      timeout: 5000ms
-      connect-timeout: 5000ms
+      host: ${REDIS_HOST:redis-15043.c1.us-central1-2.gce.cloud.redislabs.com}
+      port: ${REDIS_PORT:15043}
+      password: ${REDIS_PASSWORD:Redies@123}
+      timeout: ${REDIS_TIMEOUT:5000ms}
+      connect-timeout: ${REDIS_TIMEOUT:5000ms}
       ssl:
-        enabled: true   # set to false if your Redis port is NOT SSL
+        enabled: ${REDIS_SSL:false}   # default FALSE; set REDIS_SSL=true ONLY if your port is TLS
       lettuce:
         pool:
-          max-active: 10
-          max-idle: 5
+          max-active: ${REDIS_POOL_MAX_ACTIVE:10}
+          max-idle: ${REDIS_POOL_MAX_IDLE:5}
           min-idle: 2
           max-wait: 2000ms
 
