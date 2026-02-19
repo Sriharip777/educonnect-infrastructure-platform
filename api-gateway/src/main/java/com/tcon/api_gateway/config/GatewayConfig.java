@@ -1,4 +1,5 @@
 package com.tcon.api_gateway.config;
+
 import io.github.resilience4j.circuitbreaker.CircuitBreakerConfig;
 import io.github.resilience4j.timelimiter.TimeLimiterConfig;
 import lombok.RequiredArgsConstructor;
@@ -21,10 +22,8 @@ import java.time.Duration;
 @RequiredArgsConstructor
 public class GatewayConfig {
 
-    // Inject Key Resolver for rate limiting
     private final KeyResolver userKeyResolver;
 
-    // Inject custom rate limiters
     @Qualifier("authRateLimiter")
     private final RedisRateLimiter authRateLimiter;
 
@@ -36,15 +35,11 @@ public class GatewayConfig {
         log.info("🚀 Configuring API Gateway Routes with Circuit Breakers, Rate Limiting, and Retry Logic");
 
         return builder.routes()
-                // ===== PASSWORD RESET - NO RATE LIMITING =====
                 .route("auth-password-reset", r -> r
                         .path("/api/auth/password/reset-request", "/api/auth/password/reset")
-                        .filters(f -> f
-                                .retry(config -> config.setRetries(2)))
-                        // MUST match spring.application.name of auth service
+                        .filters(f -> f.retry(config -> config.setRetries(2)))
                         .uri("lb://AUTH-USER-SERVICE"))
 
-                // ===== Auth User Service - With Strict Rate Limiting =====
                 .route("auth-service", r -> r
                         .path("/api/auth/**")
                         .filters(f -> f
@@ -96,7 +91,6 @@ public class GatewayConfig {
                                 .retry(config -> config.setRetries(2)))
                         .uri("lb://AUTH-USER-SERVICE"))
 
-                // User APIs still go to auth-user-service
                 .route("user-service", r -> r
                         .path("/user-service/api/users/**")
                         .filters(f -> f
@@ -107,7 +101,6 @@ public class GatewayConfig {
                                 .retry(config -> config.setRetries(2)))
                         .uri("lb://AUTH-USER-SERVICE"))
 
-                // ===== Learning Management Service =====
                 .route("course-service", r -> r
                         .path("/api/courses/**")
                         .filters(f -> f
@@ -135,7 +128,6 @@ public class GatewayConfig {
                                 .retry(config -> config.setRetries(2)))
                         .uri("lb://LEARNING-MANAGEMENT-SERVICE"))
 
-                // ===== Communication Service =====
                 .route("communication-ws", r -> r
                         .path("/ws-messaging/**")
                         .filters(f -> f
@@ -174,7 +166,6 @@ public class GatewayConfig {
                                 .retry(config -> config.setRetries(2)))
                         .uri("lb://COMMUNICATION-SERVICE"))
 
-                // ===== Financial Service =====
                 .route("payment-service", r -> r
                         .path("/api/payments/**", "/api/refunds/**")
                         .filters(f -> f
@@ -203,7 +194,6 @@ public class GatewayConfig {
                                 .retry(config -> config.setRetries(2)))
                         .uri("lb://FINANCIAL-SERVICE"))
 
-                // ===== Notification Service =====
                 .route("notification-service", r -> r
                         .path("/api/notifications/**")
                         .filters(f -> f
@@ -213,7 +203,6 @@ public class GatewayConfig {
                                 .retry(config -> config.setRetries(2)))
                         .uri("lb://NOTIFICATION-SERVICE"))
 
-                // ===== Integration Service =====
                 .route("integration-service", r -> r
                         .path("/api/files/**", "/api/calendar/**", "/api/referrals/**", "/api/analytics/**")
                         .filters(f -> f
@@ -223,7 +212,6 @@ public class GatewayConfig {
                                 .retry(config -> config.setRetries(2)))
                         .uri("lb://INTEGRATION-SERVICE"))
 
-                // ===== Content Service =====
                 .route("content-service", r -> r
                         .path("/api/recordings/**", "/api/reviews/**", "/api/materials/**", "/api/assignments/**")
                         .filters(f -> f
@@ -233,11 +221,9 @@ public class GatewayConfig {
                                 .retry(config -> config.setRetries(2)))
                         .uri("lb://CONTENT-SERVICE"))
 
-                // ===== Actuator and Health Check Endpoints =====
                 .route("actuator", r -> r
                         .path("/actuator/**")
-                        .filters(f -> f
-                                .retry(config -> config.setRetries(1)))
+                        .filters(f -> f.retry(config -> config.setRetries(1)))
                         .uri("lb://AUTH-USER-SERVICE"))
 
                 .build();
@@ -246,7 +232,6 @@ public class GatewayConfig {
     @Bean
     public Customizer<ReactiveResilience4JCircuitBreakerFactory> defaultCustomizer() {
         log.info("🔧 Configuring Default Circuit Breaker Settings");
-
         return factory -> factory.configureDefault(id -> new Resilience4JConfigBuilder(id)
                 .circuitBreakerConfig(CircuitBreakerConfig.custom()
                         .slidingWindowType(CircuitBreakerConfig.SlidingWindowType.COUNT_BASED)
@@ -271,7 +256,6 @@ public class GatewayConfig {
     @Bean
     public Customizer<ReactiveResilience4JCircuitBreakerFactory> paymentCircuitBreakerCustomizer() {
         log.info("🔧 Configuring Payment Circuit Breaker Settings");
-
         return factory -> factory.configure(builder -> builder
                 .circuitBreakerConfig(CircuitBreakerConfig.custom()
                         .slidingWindowSize(20)
@@ -293,7 +277,6 @@ public class GatewayConfig {
     @Bean
     public Customizer<ReactiveResilience4JCircuitBreakerFactory> videoCircuitBreakerCustomizer() {
         log.info("🔧 Configuring Video Circuit Breaker Settings");
-
         return factory -> factory.configure(builder -> builder
                 .circuitBreakerConfig(CircuitBreakerConfig.custom()
                         .slidingWindowSize(15)
@@ -315,7 +298,6 @@ public class GatewayConfig {
     @Bean
     public Customizer<ReactiveResilience4JCircuitBreakerFactory> messagingCircuitBreakerCustomizer() {
         log.info("🔧 Configuring Messaging Circuit Breaker Settings");
-
         return factory -> factory.configure(builder -> builder
                 .circuitBreakerConfig(CircuitBreakerConfig.custom()
                         .slidingWindowSize(10)
