@@ -20,7 +20,7 @@ spring:
       websocket:
         enabled: true
 
-      # Routes come from GatewayConfig
+      # Routes are defined in Java (GatewayConfig)
 
       default-filters:
         - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_UNIQUE
@@ -70,7 +70,7 @@ spring:
       timeout: ${REDIS_TIMEOUT:5000ms}
       connect-timeout: ${REDIS_TIMEOUT:5000ms}
       ssl:
-        enabled: ${REDIS_SSL:false}   # default FALSE; set REDIS_SSL=true ONLY if your port is TLS
+        enabled: ${REDIS_SSL:false}   # default FALSE; set REDIS_SSL=true ONLY if your Redis port is TLS
       lettuce:
         pool:
           max-active: ${REDIS_POOL_MAX_ACTIVE:10}
@@ -80,18 +80,18 @@ spring:
 
 eureka:
   client:
-    enabled: true
+    enabled: ${EUREKA_ENABLED:true}
     register-with-eureka: true
     fetch-registry: true
     service-url:
-      defaultZone: https://educonservicediscovery-64307221061.asia-south1.run.app/eureka/
+      defaultZone: ${EUREKA_URL:https://educonservicediscovery-64307221061.asia-south1.run.app/eureka/}
     registry-fetch-interval-seconds: 30
     eureka-server-connect-timeout-seconds: 10
     eureka-server-read-timeout-seconds: 10
 
   instance:
-    prefer-ip-address: false
-    hostname: educonapigateway-64307221061.asia-south1.run.app
+    prefer-ip-address: ${EUREKA_PREFER_IP_ADDRESS:false}
+    hostname: ${EUREKA_INSTANCE_HOSTNAME:educonapigateway-64307221061.asia-south1.run.app}
     instance-id: ${spring.application.name}:${random.value}
     non-secure-port-enabled: false
     secure-port-enabled: true
@@ -103,8 +103,8 @@ eureka:
     lease-expiration-duration-in-seconds: 30
 
 jwt:
-  secret: my-super-secret-jwt-key-for-educonnect-platform-minimum-256-bits-required
-  expiration: 86400000
+  secret: ${JWT_SECRET:my-super-secret-jwt-key-for-educonnect-platform-minimum-256-bits-required}
+  expiration: ${JWT_EXPIRATION:86400000}
 
 management:
   endpoints:
