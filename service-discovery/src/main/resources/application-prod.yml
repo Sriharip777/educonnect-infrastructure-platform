@@ -4,30 +4,28 @@ server:
 
 spring:
   application:
-    name: ${SPRING_APPLICATION_NAME:service-discovery}
+    name: service-discovery
 
 eureka:
   client:
-    # Eureka server should NOT register itself
+    # Eureka server should NOT register with itself
     register-with-eureka: false
     fetch-registry: false
     service-url:
-      # IMPORTANT:
-      # - Local: http://localhost:${PORT}/eureka/
-      # - Cloud Run: https://<service>.run.app/eureka/
+      # Local default; override in Cloud Run with EUREKA_DEFAULT_ZONE
       defaultZone: ${EUREKA_DEFAULT_ZONE:http://localhost:${PORT:8761}/eureka/}
 
   instance:
-    # For Cloud Run set: EUREKA_INSTANCE_HOSTNAME=educonservicediscovery-....run.app
+    # In Cloud Run set: EUREKA_INSTANCE_HOSTNAME=educonservicediscovery-....run.app
     hostname: ${EUREKA_INSTANCE_HOSTNAME:localhost}
     prefer-ip-address: ${EUREKA_PREFER_IP:false}
 
-    # Cloud Run should publish HTTPS endpoints (even though container is HTTP)
+    # Cloud Run: expose HTTPS metadata
     secure-port-enabled: ${EUREKA_SECURE_PORT_ENABLED:true}
     non-secure-port-enabled: ${EUREKA_NON_SECURE_PORT_ENABLED:false}
     secure-port: 443
 
-    # DO NOT add :${server.port} for Cloud Run; public URL is always 443.
+    # For Cloud Run do NOT append :${server.port}; public URL is 443
     home-page-url: ${EUREKA_HOME_PAGE_URL:https://${eureka.instance.hostname}/}
     status-page-url: ${EUREKA_STATUS_PAGE_URL:https://${eureka.instance.hostname}/actuator/info}
     health-check-url: ${EUREKA_HEALTH_CHECK_URL:https://${eureka.instance.hostname}/actuator/health}
