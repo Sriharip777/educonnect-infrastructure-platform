@@ -25,8 +25,8 @@ spring:
       websocket:
         enabled: true
 
-      # We are using Java-based RouteLocator (GatewayConfig),
-      # so DO NOT define routes here to avoid duplication.
+      # Routes are defined in Java (GatewayConfig),
+      # so DO NOT define spring.cloud.gateway.routes here.
 
       default-filters:
         - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_UNIQUE
@@ -95,7 +95,7 @@ eureka:
     register-with-eureka: true
     fetch-registry: true
     service-url:
-      # Your discovery service on Cloud Run
+      # Discovery service on Cloud Run
       defaultZone: https://educonservicediscovery-64307221061.asia-south1.run.app/eureka/
     registry-fetch-interval-seconds: 30
     eureka-server-connect-timeout-seconds: 10
