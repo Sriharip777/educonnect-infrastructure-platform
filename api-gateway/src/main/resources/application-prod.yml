@@ -20,8 +20,6 @@ spring:
       websocket:
         enabled: true
 
-      # Routes are defined in Java (GatewayConfig)
-
       default-filters:
         - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_UNIQUE
         - name: Retry
@@ -70,7 +68,7 @@ spring:
       timeout: ${REDIS_TIMEOUT:5000ms}
       connect-timeout: ${REDIS_TIMEOUT:5000ms}
       ssl:
-        enabled: ${REDIS_SSL:false}   # default FALSE; set REDIS_SSL=true ONLY if your Redis port is TLS
+        enabled: ${REDIS_SSL:false}
       lettuce:
         pool:
           max-active: ${REDIS_POOL_MAX_ACTIVE:10}
@@ -82,12 +80,10 @@ eureka:
   client:
     enabled: ${EUREKA_ENABLED:true}
     register-with-eureka: true
-    fetch-registry: ${EUREKA_FETCH_REGISTRY:true}   # you can set to false via env if needed
+    fetch-registry: ${EUREKA_FETCH_REGISTRY:true}
     service-url:
       defaultZone: ${EUREKA_URL:https://educonservicediscovery-64307221061.asia-south1.run.app/eureka/}
     registry-fetch-interval-seconds: 30
-
-    # Increased timeouts for Cloud Run
     eureka-server-connect-timeout-seconds: 20
     eureka-server-read-timeout-seconds: 30
 
