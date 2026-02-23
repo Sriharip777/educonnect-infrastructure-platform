@@ -9,168 +9,80 @@ spring:
 
   cloud:
     gateway:
-      # ✅ FIXED: Use new server.webflux namespace
-      server:
-        webflux:
-          websocket:
-            enabled: true
+      websocket:
+        enabled: true  # ✅ Added for WebSocket support
 
-          discovery:
-            locator:
-              enabled: true
-              lower-case-service-id: true
+      discovery:
+        locator:
+          enabled: true
+          lower-case-service-id: true
 
-          routes:
-            # AUTH PASSWORD RESET (No rate limiting)
-            - id: auth-password-reset
-              uri: lb://auth-user-service
-              predicates:
-                - Path=/api/auth/password/reset-request,/api/auth/password/reset
-              filters:
-                - name: Retry
-                  args:
-                    retries: 2
-
-            # AUTH SERVICE (With rate limiting)
-            - id: auth-service
-              uri: lb://auth-user-service
-              predicates:
-                - Path=/api/auth/**
-              filters:
-                # ✅ FIXED: Use bean reference syntax
-                - name: RequestRateLimiter
-                  args:
-                    rate-limiter: "#{@authRateLimiter}"
-                    key-resolver: "#{@userKeyResolver}"
-                    deny-empty-key: false
-                - name: CircuitBreaker
-                  args:
-                    name: auth-service-cb
-                    fallbackUri: forward:/fallback/auth
-                - name: Retry
-                  args:
-                    retries: 2
-                    backoff:
-                      firstBackoff: 100ms
-                      maxBackoff: 1000ms
-                      factor: 2
-                      basedOnPreviousValue: false
-
-            - id: student-service
-              uri: lb://auth-user-service
-              predicates:
-                - Path=/api/student/**
-              filters:
-                - name: CircuitBreaker
-                  args:
-                    name: auth-service-cb
-                    fallbackUri: forward:/fallback/user
-                - name: Retry
-                  args:
-                    retries: 2
-
-            - id: teacher-service
-              uri: lb://auth-user-service
-              predicates:
-                - Path=/api/teacher/**
-              filters:
-                - name: CircuitBreaker
-                  args:
-                    name: auth-service-cb
-                    fallbackUri: forward:/fallback/user
-                - name: Retry
-                  args:
-                    retries: 2
-
-            - id: parent-service
-              uri: lb://auth-user-service
-              predicates:
-                - Path=/api/parent/**
-              filters:
-                - name: CircuitBreaker
-                  args:
-                    name: auth-service-cb
-                    fallbackUri: forward:/fallback/user
-                - name: Retry
-                  args:
-                    retries: 2
-
-            - id: admin-service
-              uri: lb://auth-user-service
-              predicates:
-                - Path=/api/admin/**
-              filters:
-                - name: CircuitBreaker
-                  args:
-                    name: auth-service-cb
-                    fallbackUri: forward:/fallback/user
-                - name: Retry
-                  args:
-                    retries: 2
-
-            - id: user-service
-              uri: lb://auth-user-service
-              predicates:
-                - Path=/user-service/api/users/**
-              filters:
-                - StripPrefix=1
-                - name: CircuitBreaker
-                  args:
-                    name: auth-service-cb
-                    fallbackUri: forward:/fallback/user
-                - name: Retry
-                  args:
-                    retries: 2
-
-          default-filters:
+      routes:
+        - id: auth-service
+          uri: lb://AUTH-USER-SERVICE
+          predicates:
+            - Path=/api/auth/**
+          filters:
+            - StripPrefix=1
             - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_UNIQUE
-            - name: Retry
-              args:
-                retries: 2
-                methods: GET,POST,PUT,DELETE
-                backoff:
-                  firstBackoff: 50ms
-                  maxBackoff: 500ms
 
-          httpclient:
-            connect-timeout: 60000
-            response-timeout: 5m
-            websocket:
-              max-frame-payload-length: 1048576
-              proxy-ping: true
+        # ✅ Add WebSocket route if needed
+        - id: video-websocket
+          uri: lb://VIDEO-SERVICE
+          predicates:
+            - Path=/ws/**
+          filters:
+            - StripPrefix=0
 
-          globalcors:
-            add-to-simple-url-handler-mapping: true
-            cors-configurations:
-              '[/**]':
-                allowedOriginPatterns: "*"
-                allowedMethods:
-                  - GET
-                  - POST
-                  - PUT
-                  - DELETE
-                  - PATCH
-                  - OPTIONS
-                allowedHeaders: "*"
-                allowCredentials: true
-                maxAge: 3600
+      default-filters:
+        - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_UNIQUE
+        - name: Retry
+          args:
+            retries: 2
+            methods: GET,POST,PUT,DELETE
+            backoff:
+              firstBackoff: 50ms
+              maxBackoff: 500ms
+
+      httpclient:
+        connect-timeout: 60000
+        response-timeout: 5m
+        websocket:
+          max-frame-payload-length: 1048576
+          proxy-ping: true
+
+      globalcors:
+        add-to-simple-url-handler-mapping: true
+        corsConfigurations:
+          '[/**]':
+            allowedOriginPatterns: "*"
+            allowedMethods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - PATCH
+              - OPTIONS
+            allowedHeaders: "*"
+            allowCredentials: true
+            maxAge: 3600
 
     loadbalancer:
       enabled: true
       ribbon:
         enabled: false
       cache:
-        enabled: false
+        enabled: false  # Disabled for Cloud Run dynamic scaling
 
   data:
     redis:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
-      password: ${REDIS_PASSWORD:}
+      #      password: ${REDIS_PASSWORD}
       timeout: 5000ms
       connect-timeout: 5000ms
       ssl:
-        enabled: ${REDIS_SSL_ENABLED:false}
+        enabled: ${REDIS_SSL_ENABLED:false}  # ✅ Fixed structure
       lettuce:
         pool:
           max-active: 10
@@ -180,7 +92,7 @@ spring:
 
 eureka:
   client:
-    enabled: ${EUREKA_ENABLED:true}
+    enabled: true
     service-url:
       defaultZone: ${EUREKA_URL:http://localhost:8761/eureka/}
     registry-fetch-interval-seconds: 5
@@ -190,34 +102,43 @@ eureka:
     eureka-server-read-timeout-seconds: 10
 
   instance:
-    prefer-ip-address: ${EUREKA_PREFER_IP:true}
+    prefer-ip-address: ${EUREKA_PREFER_IP:false}
     hostname: ${EUREKA_INSTANCE_HOSTNAME:localhost}
     instance-id: ${spring.application.name}:${random.value}
-    non-secure-port-enabled: ${EUREKA_NON_SECURE_PORT_ENABLED:true}
-    secure-port-enabled: ${EUREKA_SECURE_PORT_ENABLED:false}
+
+    # Cloud Run HTTPS configuration
+    non-secure-port-enabled: ${EUREKA_NON_SECURE_PORT_ENABLED:false}
+    secure-port-enabled: ${EUREKA_SECURE_PORT_ENABLED:true}
     secure-port: ${EUREKA_SECURE_PORT:443}
+
+    # Health check URLs (HTTPS)
+    home-page-url: https://${eureka.instance.hostname}/
+    status-page-url: https://${eureka.instance.hostname}/actuator/info
+    health-check-url: https://${eureka.instance.hostname}/actuator/health
+
     lease-renewal-interval-in-seconds: 10
     lease-expiration-duration-in-seconds: 30
 
 jwt:
-  secret: ${JWT_SECRET:my-super-secret-jwt-key-for-educonnect-platform-minimum-256-bits-required-default-local}
+  secret: ${JWT_SECRET:my-super-secret-jwt-key-for-educonnect-platform-minimum-256-bits-required}  # ✅ Removed default - must be set via env var
   expiration: ${JWT_EXPIRATION:86400000}
 
 management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics,prometheus
+        include: health,info,metrics,gateway,prometheus
       base-path: /actuator
   endpoint:
     health:
       show-details: always
-    # ✅ FIXED: Removed gateway.enabled (incompatible in new version)
+    gateway:
+      enabled: true
 
 logging:
   level:
     root: ${LOG_LEVEL_ROOT:INFO}
-    com.tcon.api_gateway: ${LOG_LEVEL_APP:DEBUG}
+    com.tcon.api_gateway: ${LOG_LEVEL_APP:INFO}
     org.springframework.cloud.gateway: INFO
     com.netflix.discovery: INFO
     org.springframework.data.redis: WARN
