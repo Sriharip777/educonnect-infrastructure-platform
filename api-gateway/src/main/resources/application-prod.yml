@@ -22,6 +22,7 @@ spring:
           uri: lb://AUTH-USER-SERVICE
           predicates:
             - Path=/api/auth/**
+            - Method=GET,POST,PUT,DELETE,OPTIONS,PATCH
           filters:
             - StripPrefix=1
             - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_UNIQUE
@@ -50,7 +51,7 @@ spring:
           max-frame-payload-length: 1048576
           proxy-ping: true
 
-    globalcors:
+      globalcors:
         add-to-simple-url-handler-mapping: true
         corsConfigurations:
           '[/**]':
@@ -66,19 +67,11 @@ spring:
             allowCredentials: true
             maxAge: 3600
 
-    loadbalancer:
-      enabled: true
-      ribbon:
-        enabled: false
-      cache:
-        enabled: false
-
   data:
     redis:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
-      # uncomment if you want to use password from env
-      # password: ${REDIS_PASSWORD}
+      # password: ${REDIS_PASSWORD:}
       timeout: ${REDIS_TIMEOUT:5000ms}
       connect-timeout: ${REDIS_TIMEOUT:5000ms}
       ssl:
@@ -89,6 +82,21 @@ spring:
           max-idle: ${REDIS_POOL_MAX_IDLE:5}
           min-idle: 2
           max-wait: 2000ms
+
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    consumer:
+      group-id: ${KAFKA_CONSUMER_GROUP_ID:api-gateway-group}
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+    properties:
+      security.protocol: ${KAFKA_SECURITY_PROTOCOL:PLAINTEXT}
+      # sasl.mechanism: ${KAFKA_SASL_MECHANISM:PLAIN}
+      # sasl.jaas.config: "org.apache.kafka.common.security.plain.PlainLoginModule required username='${KAFKA_SASL_USERNAME}' password='${KAFKA_SASL_PASSWORD}';"
 
 eureka:
   client:
