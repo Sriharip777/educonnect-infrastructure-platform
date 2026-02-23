@@ -5,20 +5,33 @@ server:
 
 spring:
   application:
-    name: api-gateway
-
-  main:
-    web-application-type: reactive
+    name: ${SPRING_APPLICATION_NAME:api-gateway}
 
   cloud:
-    bootstrap:
-      enabled: false
-    config:
-      enabled: false
-
     gateway:
       websocket:
         enabled: true
+
+      discovery:
+        locator:
+          enabled: true
+          lower-case-service-id: true
+
+      routes:
+        - id: auth-service
+          uri: lb://AUTH-USER-SERVICE
+          predicates:
+            - Path=/api/auth/**
+          filters:
+            - StripPrefix=1
+            - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_UNIQUE
+
+        - id: video-websocket
+          uri: lb://VIDEO-SERVICE
+          predicates:
+            - Path=/ws/**
+          filters:
+            - StripPrefix=0
 
       default-filters:
         - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_UNIQUE
@@ -39,7 +52,7 @@ spring:
 
       globalcors:
         add-to-simple-url-handler-mapping: true
-        cors-configurations:
+        corsConfigurations:
           '[/**]':
             allowedOriginPatterns: "*"
             allowedMethods:
@@ -53,52 +66,55 @@ spring:
             allowCredentials: true
             maxAge: 3600
 
-  loadbalancer:
-    enabled: true
-    ribbon:
-      enabled: false
-    cache:
-      enabled: false
+    loadbalancer:
+      enabled: true
+      ribbon:
+        enabled: false
+      cache:
+        enabled: false
 
   data:
     redis:
-      host: ${REDIS_HOST:redis-15043.c1.us-central1-2.gce.cloud.redislabs.com}
-      port: ${REDIS_PORT:15043}
-      password: ${REDIS_PASSWORD:Redies@123}
-      timeout: ${REDIS_TIMEOUT:5000ms}
-      connect-timeout: ${REDIS_TIMEOUT:5000ms}
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      # password: ${REDIS_PASSWORD}
+      timeout: 5000ms
+      connect-timeout: 5000ms
       ssl:
-        enabled: ${REDIS_SSL:false}
+        enabled: ${REDIS_SSL_ENABLED:false}
       lettuce:
         pool:
-          max-active: ${REDIS_POOL_MAX_ACTIVE:10}
-          max-idle: ${REDIS_POOL_MAX_IDLE:5}
+          max-active: 10
+          max-idle: 5
           min-idle: 2
           max-wait: 2000ms
 
 eureka:
   client:
-    enabled: ${EUREKA_ENABLED:true}
-    register-with-eureka: true
-    fetch-registry: ${EUREKA_FETCH_REGISTRY:true}
+    enabled: true
     service-url:
-      defaultZone: ${EUREKA_URL:https://educonservicediscovery-64307221061.asia-south1.run.app/eureka/}
-    registry-fetch-interval-seconds: 30
-    eureka-server-connect-timeout-seconds: 20
-    eureka-server-read-timeout-seconds: 30
+      defaultZone: ${EUREKA_URL:http://localhost:8761/eureka/}
+    registry-fetch-interval-seconds: 5
+    register-with-eureka: true
+    fetch-registry: true
+    eureka-server-connect-timeout-seconds: 10
+    eureka-server-read-timeout-seconds: 10
 
   instance:
-    prefer-ip-address: ${EUREKA_PREFER_IP_ADDRESS:false}
-    hostname: ${EUREKA_INSTANCE_HOSTNAME:educonapigateway-64307221061.asia-south1.run.app}
+    prefer-ip-address: ${EUREKA_PREFER_IP:false}
+    hostname: ${EUREKA_INSTANCE_HOSTNAME:localhost}
     instance-id: ${spring.application.name}:${random.value}
-    non-secure-port-enabled: false
-    secure-port-enabled: true
-    secure-port: 443
+
+    non-secure-port-enabled: ${EUREKA_NON_SECURE_PORT_ENABLED:false}
+    secure-port-enabled: ${EUREKA_SECURE_PORT_ENABLED:true}
+    secure-port: ${EUREKA_SECURE_PORT:443}
+
     home-page-url: https://${eureka.instance.hostname}/
     status-page-url: https://${eureka.instance.hostname}/actuator/info
     health-check-url: https://${eureka.instance.hostname}/actuator/health
-    lease-renewal-interval-in-seconds: 30
-    lease-expiration-duration-in-seconds: 90
+
+    lease-renewal-interval-in-seconds: 10
+    lease-expiration-duration-in-seconds: 30
 
 jwt:
   secret: ${JWT_SECRET:my-super-secret-jwt-key-for-educonnect-platform-minimum-256-bits-required}
@@ -108,16 +124,18 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics,prometheus
+        include: health,info,metrics,gateway,prometheus
       base-path: /actuator
   endpoint:
     health:
       show-details: always
+    gateway:
+      enabled: true
 
 logging:
   level:
-    root: INFO
-    com.tcon.api_gateway: DEBUG
+    root: ${LOG_LEVEL_ROOT:INFO}
+    com.tcon.api_gateway: ${LOG_LEVEL_APP:INFO}
     org.springframework.cloud.gateway: INFO
     com.netflix.discovery: INFO
     org.springframework.data.redis: WARN
