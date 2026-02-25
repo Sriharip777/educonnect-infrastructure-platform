@@ -8,56 +8,48 @@ spring:
     name: ${SPRING_APPLICATION_NAME:api-gateway}
 
   # ===========================
-  # KAFKA (SELF-HOSTED / VPC)
+  # KAFKA (OPTIONAL)
   # ===========================
   kafka:
-    # Local default: localhost:9092
-    # Cloud/VPC: set KAFKA_BOOTSTRAP_SERVERS=10.0.0.5:9092
+    # In Cloud Run set KAFKA_BOOTSTRAP_SERVERS=10.128.0.4:9092 (your Kafka VM)
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
-
     consumer:
       group-id: ${KAFKA_CONSUMER_GROUP_ID:${spring.application.name}-group}
       auto-offset-reset: latest
       enable-auto-commit: false
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-
-      # Important for Cloud Run / cloud environments
       session-timeout-ms: 60000
       heartbeat-interval-ms: 20000
       max-poll-interval-ms: 300000
-
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.apache.kafka.common.serialization.StringSerializer
       acks: all
       retries: 3
-
     properties:
-      # No SASL for internal VPC traffic (self-hosted Kafka)
       security.protocol: ${KAFKA_SECURITY_PROTOCOL:PLAINTEXT}
       request.timeout.ms: 30000
       connections.max.idle.ms: 540000
-      # Uncomment and configure if you later use Confluent Cloud / SASL
-      # sasl.mechanism: ${KAFKA_SASL_MECHANISM:PLAIN}
-      # sasl.jaas.config: >
-      #   org.apache.kafka.common.security.plain.PlainLoginModule required
-      #   username="${KAFKA_SASL_USERNAME}" password="${KAFKA_SASL_PASSWORD}";
 
   # ===========================
   # REDIS (RATE LIMITING / CACHE)
   # ===========================
   data:
     redis:
-      # Local default: localhost
-      # Cloud/VPC: set REDIS_HOST=10.0.0.10
-      host: ${REDIS_HOST:localhost}
+      # OPTION A: RedisLabs public host (no VPC needed)
+      # host: ${REDIS_HOST:redis-15043.c1.us-central1-2.gce.cloud.redislabs.com}
+      # port: ${REDIS_PORT:15043}
+      # ssl:
+      #   enabled: ${REDIS_SSL_ENABLED:true}
+
+      # OPTION B (recommended for you now): Redis VM in VPC at 10.128.0.4:6379
+      host: ${REDIS_HOST:10.128.0.4}
       port: ${REDIS_PORT:6379}
       password: ${REDIS_PASSWORD:}
-      timeout: ${REDIS_TIMEOUT:2000ms}
-      connect-timeout: ${REDIS_CONNECT_TIMEOUT:2000ms}
+      timeout: ${REDIS_TIMEOUT:5000ms}
+      connect-timeout: ${REDIS_CONNECT_TIMEOUT:5000ms}
       ssl:
-        # Internal VPC: false; RedisLabs/Cloud: true
         enabled: ${REDIS_SSL_ENABLED:false}
       lettuce:
         pool:
@@ -77,23 +69,22 @@ spring:
       discovery:
         locator:
           enabled: true
-          lower-case-service-id: true
+          # Service IDs will be UPPERCASE in Eureka
+          lower-case-service-id: false
 
-      # YAML routes (example: auth + websocket)
       routes:
+        # Auth service (AUTH-USER-SERVICE)
         - id: auth-service
           uri: lb://AUTH-USER-SERVICE
           predicates:
             - Path=/api/auth/**
             - Method=GET,POST,PUT,DELETE,OPTIONS,PATCH
           filters:
-            # Remove first path segment if your services expect `/auth/**` instead of `/api/auth/**`
-            # Comment out if not needed
-            # - StripPrefix=1
             - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_UNIQUE
 
+        # Video / websocket service (VIDEO-SERVICE)
         - id: video-websocket
-          uri: lb://VIDEO-SERVICE
+          uri: lb:ws://VIDEO-SERVICE
           predicates:
             - Path=/ws/**
           filters:
@@ -141,8 +132,8 @@ eureka:
     register-with-eureka: true
     fetch-registry: true
     service-url:
-      # Local: http://localhost:8761/eureka/
-      # Cloud: set EUREKA_URL=https://educonservicediscovery-64307221061.asia-south1.run.app/eureka/
+      # In Cloud Run, override with real Eureka URL via EUREKA_URL
+      # e.g. https://educonservicediscovery-64307221061.asia-south1.run.app/eureka/
       defaultZone: ${EUREKA_URL:http://localhost:8761/eureka/}
     registry-fetch-interval-seconds: 5
     eureka-server-connect-timeout-seconds: 10
@@ -150,6 +141,7 @@ eureka:
 
   instance:
     prefer-ip-address: ${EUREKA_PREFER_IP:false}
+    # In Cloud Run set: EUREKA_INSTANCE_HOSTNAME=educonapigateway-64307221061.asia-south1.run.app
     hostname: ${EUREKA_INSTANCE_HOSTNAME:localhost}
     instance-id: ${spring.application.name}:${random.value}
     non-secure-port-enabled: ${EUREKA_NON_SECURE_PORT_ENABLED:false}

@@ -1,5 +1,4 @@
 server:
-  # Cloud Run injects PORT; local default 8761
   port: ${PORT:8761}
 
 spring:
@@ -8,24 +7,17 @@ spring:
 
 eureka:
   client:
-    # Eureka server should NOT register with itself
     register-with-eureka: false
     fetch-registry: false
     service-url:
-      # Local default; override in Cloud Run with EUREKA_DEFAULT_ZONE
       defaultZone: ${EUREKA_DEFAULT_ZONE:http://localhost:${PORT:8761}/eureka/}
 
   instance:
-    # In Cloud Run set: EUREKA_INSTANCE_HOSTNAME=educonservicediscovery-....run.app
     hostname: ${EUREKA_INSTANCE_HOSTNAME:localhost}
     prefer-ip-address: ${EUREKA_PREFER_IP:false}
-
-    # Cloud Run: expose HTTPS metadata
     secure-port-enabled: ${EUREKA_SECURE_PORT_ENABLED:true}
     non-secure-port-enabled: ${EUREKA_NON_SECURE_PORT_ENABLED:false}
     secure-port: 443
-
-    # For Cloud Run do NOT append :${server.port}; public URL is 443
     home-page-url: ${EUREKA_HOME_PAGE_URL:https://${eureka.instance.hostname}/}
     status-page-url: ${EUREKA_STATUS_PAGE_URL:https://${eureka.instance.hostname}/actuator/info}
     health-check-url: ${EUREKA_HEALTH_CHECK_URL:https://${eureka.instance.hostname}/actuator/health}
@@ -44,11 +36,3 @@ management:
   endpoint:
     health:
       show-details: always
-
-logging:
-  level:
-    root: ${LOG_LEVEL_ROOT:INFO}
-    com.netflix.eureka: ${LOG_LEVEL_EUREKA:INFO}
-    com.netflix.discovery: ${LOG_LEVEL_DISCOVERY:INFO}
-  pattern:
-    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
