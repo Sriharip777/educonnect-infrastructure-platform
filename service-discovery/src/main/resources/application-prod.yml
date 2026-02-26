@@ -1,38 +1,23 @@
-server:
-  port: ${PORT:8761}
-
-spring:
-  application:
-    name: service-discovery
-
 eureka:
   client:
-    register-with-eureka: false
-    fetch-registry: false
+    enabled: ${EUREKA_ENABLED:true}
+    register-with-eureka: true
+    fetch-registry: true
     service-url:
-      defaultZone: ${EUREKA_DEFAULT_ZONE:http://localhost:${PORT:8761}/eureka/}
+      defaultZone: ${EUREKA_URL:https://educonservicediscovery-64307221061.asia-south1.run.app/eureka/}
+    registry-fetch-interval-seconds: 15
 
   instance:
     hostname: ${EUREKA_INSTANCE_HOSTNAME:localhost}
-    prefer-ip-address: ${EUREKA_PREFER_IP:false}
-    secure-port-enabled: ${EUREKA_SECURE_PORT_ENABLED:true}
-    non-secure-port-enabled: ${EUREKA_NON_SECURE_PORT_ENABLED:false}
+    prefer-ip-address: false
+    instance-id: ${EUREKA_INSTANCE_HOSTNAME:localhost}:${server.port}
+    non-secure-port-enabled: false
+    secure-port-enabled: true
     secure-port: 443
-    home-page-url: ${EUREKA_HOME_PAGE_URL:https://${eureka.instance.hostname}/}
-    status-page-url: ${EUREKA_STATUS_PAGE_URL:https://${eureka.instance.hostname}/actuator/info}
-    health-check-url: ${EUREKA_HEALTH_CHECK_URL:https://${eureka.instance.hostname}/actuator/health}
+    home-page-url: https://${eureka.instance.hostname}/
+    status-page-url: https://${eureka.instance.hostname}/actuator/info
+    health-check-url: https://${eureka.instance.hostname}/actuator/health
 
-  server:
-    enable-self-preservation: ${EUREKA_SELF_PRESERVATION:false}
-    eviction-interval-timer-in-ms: ${EUREKA_EVICTION_INTERVAL:5000}
-    response-cache-update-interval-ms: 3000
-
-management:
-  endpoints:
-    web:
-      exposure:
-        include: health,info,metrics,env
-      base-path: /actuator
-  endpoint:
-    health:
-      show-details: always
+    # IMPORTANT: make these values the same everywhere
+    lease-renewal-interval-in-seconds: 10
+    lease-expiration-duration-in-seconds: 90
