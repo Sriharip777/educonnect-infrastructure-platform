@@ -5,13 +5,9 @@ server:
 
 spring:
   application:
-    name: ${SPRING_APPLICATION_NAME:api-gateway}
+    name: API-GATEWAY
 
-  # ===========================
-  # KAFKA (OPTIONAL)
-  # ===========================
   kafka:
-    # In Cloud Run set KAFKA_BOOTSTRAP_SERVERS=10.128.0.4:9092 (your Kafka VM)
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
     consumer:
       group-id: ${KAFKA_CONSUMER_GROUP_ID:${spring.application.name}-group}
@@ -32,19 +28,9 @@ spring:
       request.timeout.ms: 30000
       connections.max.idle.ms: 540000
 
-  # ===========================
-  # REDIS (RATE LIMITING / CACHE)
-  # ===========================
   data:
     redis:
-      # OPTION A: RedisLabs public host (no VPC needed)
-      # host: ${REDIS_HOST:redis-15043.c1.us-central1-2.gce.cloud.redislabs.com}
-      # port: ${REDIS_PORT:15043}
-      # ssl:
-      #   enabled: ${REDIS_SSL_ENABLED:true}
-
-      # OPTION B (recommended for you now): Redis VM in VPC at 10.128.0.4:6379
-      host: ${REDIS_HOST:10.128.0.4}
+      host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
       password: ${REDIS_PASSWORD:}
       timeout: ${REDIS_TIMEOUT:5000ms}
@@ -58,22 +44,15 @@ spring:
           min-idle: 2
           max-wait: 1000ms
 
-  # ===========================
-  # SPRING CLOUD GATEWAY
-  # ===========================
   cloud:
     gateway:
       websocket:
         enabled: true
-
       discovery:
         locator:
           enabled: true
-          # Service IDs will be UPPERCASE in Eureka
           lower-case-service-id: false
-
       routes:
-        # Auth service (AUTH-USER-SERVICE)
         - id: auth-service
           uri: lb://AUTH-USER-SERVICE
           predicates:
@@ -81,88 +60,51 @@ spring:
             - Method=GET,POST,PUT,DELETE,OPTIONS,PATCH
           filters:
             - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_UNIQUE
-
-        # Video / websocket service (VIDEO-SERVICE)
-        - id: video-websocket
-          uri: lb:ws://VIDEO-SERVICE
-          predicates:
-            - Path=/ws/**
-          filters:
-            - StripPrefix=0
-
       default-filters:
         - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_UNIQUE
-        - name: Retry
-          args:
-            retries: 2
-            methods: GET,POST,PUT,DELETE
-            backoff:
-              firstBackoff: 50ms
-              maxBackoff: 500ms
-
       httpclient:
         connect-timeout: 60000
         response-timeout: 5m
         websocket:
           max-frame-payload-length: 1048576
           proxy-ping: true
-
       globalcors:
         add-to-simple-url-handler-mapping: true
         corsConfigurations:
           '[/**]':
             allowedOriginPatterns: "*"
-            allowedMethods:
-              - GET
-              - POST
-              - PUT
-              - DELETE
-              - PATCH
-              - OPTIONS
+            allowedMethods: [GET, POST, PUT, DELETE, PATCH, OPTIONS]
             allowedHeaders: "*"
             allowCredentials: true
             maxAge: 3600
 
-# ===========================
-# EUREKA (DISCOVERY)
-# ===========================
 eureka:
   client:
     enabled: true
     register-with-eureka: true
     fetch-registry: true
     service-url:
-      # In Cloud Run, override with real Eureka URL via EUREKA_URL
-      # e.g. https://educonservicediscovery-64307221061.asia-south1.run.app/eureka/
-      defaultZone: ${EUREKA_URL:http://localhost:8761/eureka/}
+      defaultZone: ${EUREKA_URL:https://educonservicediscovery-64307221061.asia-south1.run.app/eureka/}
     registry-fetch-interval-seconds: 5
     eureka-server-connect-timeout-seconds: 10
     eureka-server-read-timeout-seconds: 10
-
   instance:
-    prefer-ip-address: ${EUREKA_PREFER_IP:false}
-    # In Cloud Run set: EUREKA_INSTANCE_HOSTNAME=educonapigateway-64307221061.asia-south1.run.app
     hostname: ${EUREKA_INSTANCE_HOSTNAME:localhost}
-    instance-id: ${spring.application.name}:${random.value}
-    non-secure-port-enabled: ${EUREKA_NON_SECURE_PORT_ENABLED:false}
-    secure-port-enabled: ${EUREKA_SECURE_PORT_ENABLED:true}
-    secure-port: ${EUREKA_SECURE_PORT:443}
+    prefer-ip-address: false
+    instance-id: ${EUREKA_INSTANCE_HOSTNAME:localhost}:${server.port}
+    non-secure-port-enabled: false
+    secure-port-enabled: true
+    secure-port: 443
     home-page-url: https://${eureka.instance.hostname}/
     status-page-url: https://${eureka.instance.hostname}/actuator/info
     health-check-url: https://${eureka.instance.hostname}/actuator/health
     lease-renewal-interval-in-seconds: 10
     lease-expiration-duration-in-seconds: 30
 
-# ===========================
-# JWT CONFIG
-# ===========================
 jwt:
   secret: ${JWT_SECRET:my-super-secret-jwt-key-for-educonnect-platform-minimum-256-bits-required}
   expiration: ${JWT_EXPIRATION:86400000}
 
-# ===========================
-# ACTUATOR / MANAGEMENT
-# ===========================
 management:
   endpoints:
     web:
@@ -175,9 +117,6 @@ management:
     gateway:
       enabled: true
 
-# ===========================
-# LOGGING
-# ===========================
 logging:
   level:
     root: ${LOG_LEVEL_ROOT:INFO}
