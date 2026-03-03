@@ -10,20 +10,19 @@ import org.springframework.web.cors.reactive.CorsWebFilter;
 import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource;
 import java.util.Arrays;
 import java.util.List;
-
 @Slf4j
 @Configuration
 public class CorsWebFilterConfig {
 
     @Bean
-    @Order(Ordered.HIGHEST_PRECEDENCE)  // ✅ HIGHEST priority - runs FIRST
+    @Order(Ordered.HIGHEST_PRECEDENCE)
     public CorsWebFilter corsWebFilter() {
         log.info("🌐 [CORS] Configuring CorsWebFilter with HIGHEST_PRECEDENCE");
 
         CorsConfiguration corsConfig = new CorsConfiguration();
 
-        // Allowed origins
         corsConfig.setAllowedOrigins(Arrays.asList(
+                "https://educonnect.tconsolutions.com",   // ← NEW PROD FRONTEND
                 "http://localhost:3000",
                 "http://localhost:5173",
                 "http://localhost:4200",
@@ -32,15 +31,12 @@ public class CorsWebFilterConfig {
                 "http://127.0.0.1:4200"
         ));
 
-        // Allowed methods
         corsConfig.setAllowedMethods(Arrays.asList(
                 "GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS", "HEAD"
         ));
 
-        // Allowed headers
         corsConfig.setAllowedHeaders(List.of("*"));
 
-        // Exposed headers
         corsConfig.setExposedHeaders(Arrays.asList(
                 "Authorization",
                 "Content-Type",
@@ -50,17 +46,13 @@ public class CorsWebFilterConfig {
                 "X-User-Email"
         ));
 
-        // Allow credentials
         corsConfig.setAllowCredentials(true);
-
-        // Max age
         corsConfig.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", corsConfig);
 
         log.info("✅ [CORS] CorsWebFilter configured successfully");
-
         return new CorsWebFilter(source);
     }
 }
