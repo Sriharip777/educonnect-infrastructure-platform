@@ -1,22 +1,36 @@
+server:
+  port: ${PORT:8080}
+
+spring:
+  application:
+    name: ${SPRING_APPLICATION_NAME:APP-NAME}   # override per service via env
+
 eureka:
   client:
+    # Turn Eureka on/off via env
     enabled: ${EUREKA_ENABLED:true}
+
+    # This app is a Eureka client
     register-with-eureka: true
     fetch-registry: true
+
+    # Eureka server URL
     service-url:
       defaultZone: ${EUREKA_URL:https://educonservicediscovery-64307221061.asia-south1.run.app/eureka/}
+
+    # How often to refresh registry cache
     registry-fetch-interval-seconds: 15
 
   instance:
-    # Cloud Run hostname for this service (set per service in env)
-    # e.g. EUREKA_INSTANCE_HOSTNAME=educonauthservice-64307221061.asia-south1.run.app
+    # Cloud Run hostname for THIS service
+    # e.g. educonauthservice-64307221061.asia-south1.run.app
     hostname: ${EUREKA_INSTANCE_HOSTNAME:localhost}
     prefer-ip-address: false
 
-    # What appears as the instance id in Eureka UI
-    instance-id: ${EUREKA_INSTANCE_HOSTNAME:localhost}:${server.port}
+    # ID shown in Eureka UI
+    instance-id: ${eureka.instance.hostname}:${server.port}
 
-    # Force HTTPS URLs
+    # Only HTTPS
     non-secure-port-enabled: false
     secure-port-enabled: true
     secure-port: 443
@@ -26,6 +40,6 @@ eureka:
     status-page-url: https://${eureka.instance.hostname}/actuator/info
     health-check-url: https://${eureka.instance.hostname}/actuator/health
 
-    # Heartbeat/expiration – keep SAME across all clients
+    # Heartbeat / eviction timing
     lease-renewal-interval-in-seconds: 10
     lease-expiration-duration-in-seconds: 90
