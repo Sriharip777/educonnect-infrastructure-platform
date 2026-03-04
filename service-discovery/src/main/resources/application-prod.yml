@@ -1,23 +1,34 @@
+server:
+  port: ${PORT:8080}
+
+spring:
+  application:
+    name: educonservicediscovery
+
 eureka:
+  # This block says "I am the server, not a client"
   client:
-    enabled: ${EUREKA_ENABLED:true}
-    register-with-eureka: true
-    fetch-registry: true
-    service-url:
-      defaultZone: ${EUREKA_URL:https://educonservicediscovery-64307221061.asia-south1.run.app/eureka/}
-    registry-fetch-interval-seconds: 15
+    register-with-eureka: false
+    fetch-registry: false
 
   instance:
-    hostname: ${EUREKA_INSTANCE_HOSTNAME:localhost}
+    # Public Cloud Run URL of the Eureka server
+    hostname: ${EUREKA_INSTANCE_HOSTNAME:educonservicediscovery-64307221061.asia-south1.run.app}
     prefer-ip-address: false
-    instance-id: ${EUREKA_INSTANCE_HOSTNAME:localhost}:${server.port}
+
     non-secure-port-enabled: false
     secure-port-enabled: true
     secure-port: 443
+
     home-page-url: https://${eureka.instance.hostname}/
     status-page-url: https://${eureka.instance.hostname}/actuator/info
     health-check-url: https://${eureka.instance.hostname}/actuator/health
 
-    # IMPORTANT: make these values the same everywhere
+    # How often clients send heartbeats / when they expire (same as clients)
     lease-renewal-interval-in-seconds: 10
     lease-expiration-duration-in-seconds: 90
+
+  server:
+    # Optional but useful in your setup
+    enable-self-preservation: false
+    eviction-interval-timer-in-ms: 5000
