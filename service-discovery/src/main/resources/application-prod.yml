@@ -8,16 +8,24 @@ eureka:
     registry-fetch-interval-seconds: 15
 
   instance:
+    # Cloud Run hostname for this service (set per service in env)
+    # e.g. EUREKA_INSTANCE_HOSTNAME=educonauthservice-64307221061.asia-south1.run.app
     hostname: ${EUREKA_INSTANCE_HOSTNAME:localhost}
     prefer-ip-address: false
+
+    # What appears as the instance id in Eureka UI
     instance-id: ${EUREKA_INSTANCE_HOSTNAME:localhost}:${server.port}
+
+    # Force HTTPS URLs
     non-secure-port-enabled: false
     secure-port-enabled: true
     secure-port: 443
+
+    # URLs other services will call
     home-page-url: https://${eureka.instance.hostname}/
     status-page-url: https://${eureka.instance.hostname}/actuator/info
     health-check-url: https://${eureka.instance.hostname}/actuator/health
 
-    # IMPORTANT: make these values the same everywhere
+    # Heartbeat/expiration – keep SAME across all clients
     lease-renewal-interval-in-seconds: 10
     lease-expiration-duration-in-seconds: 90
