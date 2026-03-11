@@ -1,146 +1,231 @@
 server:
-  port: ${PORT:8080}
-  netty:
-    connection-timeout: 30s
+  port: 8080
 
 spring:
   application:
-    name: ${SPRING_APPLICATION_NAME:api-gateway}
+    name: api-gateway
 
   cloud:
     gateway:
-      websocket:
-        enabled: true  # ✅ Added for WebSocket support
+      server:
+        webflux:
 
-      discovery:
-        locator:
-          enabled: true
-          lower-case-service-id: true
+          discovery:
+            locator:
+              enabled: false
 
-      routes:
-        - id: auth-service
-          uri: lb://AUTH-USER-SERVICE
-          predicates:
-            - Path=/api/auth/**
-          filters:
-            - StripPrefix=1
-            - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_UNIQUE
+          routes:
 
-        # ✅ Add WebSocket route if needed
-        - id: video-websocket
-          uri: lb://VIDEO-SERVICE
-          predicates:
-            - Path=/ws/**
-          filters:
-            - StripPrefix=0
+            # =========================
+            # AUTH SERVICE
+            # =========================
+            - id: auth-service
+              uri: lb://auth-user-service
+              order: -20
+              predicates:
+                - Path=/api/auth/**
+              filters:
+                - Retry=2
+                - name: CircuitBreaker
+                  args:
+                    name: auth-cb
+                    fallbackUri: forward:/fallback/auth
 
-      default-filters:
-        - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_UNIQUE
-        - name: Retry
-          args:
-            retries: 2
-            methods: GET,POST,PUT,DELETE
-            backoff:
-              firstBackoff: 50ms
-              maxBackoff: 500ms
+            # =========================
+            # USER ROLE SERVICE
+            # =========================
+            - id: user-role-service
+              uri: lb://auth-user-service
+              order: -15
+              predicates:
+                - Path=/api/student/**,/api/teacher/**,/api/parent/**,/api/admin/**
+              filters:
+                - Retry=2
+                - name: CircuitBreaker
+                  args:
+                    name: user-role-cb
+                    fallbackUri: forward:/fallback/auth
 
-      httpclient:
-        connect-timeout: 60000
-        response-timeout: 5m
-        websocket:
-          max-frame-payload-length: 1048576
-          proxy-ping: true
+            # =========================
+            # LMS SERVICES
+            # =========================
 
-      globalcors:
-        add-to-simple-url-handler-mapping: true
-        corsConfigurations:
-          '[/**]':
-            allowedOriginPatterns: "*"
-            allowedMethods:
-              - GET
-              - POST
-              - PUT
-              - DELETE
-              - PATCH
-              - OPTIONS
-            allowedHeaders: "*"
-            allowCredentials: true
-            maxAge: 3600
+            - id: assignments-service
+              uri: lb://learning-management-service
+              order: -10
+              predicates:
+                - Path=/api/assignments/**
+              filters:
+                - Retry=2
+                - name: CircuitBreaker
+                  args:
+                    name: assignments-cb
+                    fallbackUri: forward:/fallback/lms
 
-    loadbalancer:
-      enabled: true
-      ribbon:
-        enabled: false
-      cache:
-        enabled: false  # Disabled for Cloud Run dynamic scaling
+            - id: questions-service
+              uri: lb://learning-management-service
+              order: -10
+              predicates:
+                - Path=/api/questions/**
+              filters:
+                - Retry=2
+                - name: CircuitBreaker
+                  args:
+                    name: questions-cb
+                    fallbackUri: forward:/fallback/lms
 
-  data:
-    redis:
-      host: ${REDIS_HOST:localhost}
-      port: ${REDIS_PORT:6379}
-      #      password: ${REDIS_PASSWORD}
-      timeout: 5000ms
-      connect-timeout: 5000ms
-      ssl:
-        enabled: ${REDIS_SSL_ENABLED:false}  # ✅ Fixed structure
-      lettuce:
-        pool:
-          max-active: 10
-          max-idle: 5
-          min-idle: 2
-          max-wait: 2000ms
+            - id: submissions-service
+              uri: lb://learning-management-service
+              order: -10
+              predicates:
+                - Path=/api/submissions/**
+              filters:
+                - Retry=2
+                - name: CircuitBreaker
+                  args:
+                    name: submissions-cb
+                    fallbackUri: forward:/fallback/lms
+
+            # =========================
+            # CONTENT SERVICES
+            # =========================
+
+            - id: material-service
+              uri: lb://content-service
+              order: 10
+              predicates:
+                - Path=/api/material/**
+              filters:
+                - Retry=2
+                - name: CircuitBreaker
+                  args:
+                    name: material-cb
+                    fallbackUri: forward:/fallback/content
+
+            - id: recordings-service
+              uri: lb://content-service
+              order: 10
+              predicates:
+                - Path=/api/recordings/**
+              filters:
+                - Retry=2
+                - name: CircuitBreaker
+                  args:
+                    name: recordings-cb
+                    fallbackUri: forward:/fallback/content
+
+            - id: courses-service
+              uri: lb://content-service
+              order: 10
+              predicates:
+                - Path=/api/courses/**
+              filters:
+                - Retry=2
+                - name: CircuitBreaker
+                  args:
+                    name: courses-cb
+                    fallbackUri: forward:/fallback/content
+
+  # ✅ Redis must be under spring
+  redis:
+    host: localhost
+    port: 6379
+    timeout: 60000
+
+
+# =========================
+# EUREKA
+# =========================
 
 eureka:
   client:
-    enabled: true
     service-url:
-      defaultZone: ${EUREKA_URL:http://localhost:8761/eureka/}
-    registry-fetch-interval-seconds: 5
-    register-with-eureka: true
-    fetch-registry: true
-    eureka-server-connect-timeout-seconds: 10
-    eureka-server-read-timeout-seconds: 10
+      defaultZone: http://localhost:8761/eureka/
 
   instance:
-    prefer-ip-address: ${EUREKA_PREFER_IP:false}
-    hostname: ${EUREKA_INSTANCE_HOSTNAME:localhost}
-    instance-id: ${spring.application.name}:${random.value}
+    prefer-ip-address: true
 
-    # Cloud Run HTTPS configuration
-    non-secure-port-enabled: ${EUREKA_NON_SECURE_PORT_ENABLED:false}
-    secure-port-enabled: ${EUREKA_SECURE_PORT_ENABLED:true}
-    secure-port: ${EUREKA_SECURE_PORT:443}
 
-    # Health check URLs (HTTPS)
-    home-page-url: https://${eureka.instance.hostname}/
-    status-page-url: https://${eureka.instance.hostname}/actuator/info
-    health-check-url: https://${eureka.instance.hostname}/actuator/health
-
-    lease-renewal-interval-in-seconds: 10
-    lease-expiration-duration-in-seconds: 30
-
-jwt:
-  secret: ${JWT_SECRET:my-super-secret-jwt-key-for-educonnect-platform-minimum-256-bits-required}  # ✅ Removed default - must be set via env var
-  expiration: ${JWT_EXPIRATION:86400000}
+# =========================
+# ACTUATOR
+# =========================
 
 management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics,gateway,prometheus
-      base-path: /actuator
-  endpoint:
-    health:
-      show-details: always
-    gateway:
-      enabled: true
+        include: health,info,gateway,routes
+
+
+# =========================
+# LOGGING
+# =========================
 
 logging:
   level:
-    root: ${LOG_LEVEL_ROOT:INFO}
-    com.tcon.api_gateway: ${LOG_LEVEL_APP:INFO}
-    org.springframework.cloud.gateway: INFO
-    com.netflix.discovery: INFO
-    org.springframework.data.redis: WARN
-  pattern:
-    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+    org.springframework.cloud.gateway: DEBUG
+    reactor.netty: INFO
+
+
+# =========================
+# JWT CONFIG
+# =========================
+
+jwt:
+  secret: my-super-secret-jwt-key-for-educonnect-platform-minimum-256-bits-required
+  expiration: 86400000
+  refresh-expiration: 604800000
+
+
+# =========================
+# RESILIENCE4J
+# =========================
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      auth-cb:
+        slidingWindowSize: 10
+        failureRateThreshold: 50
+        waitDurationInOpenState: 10s
+        permittedNumberOfCallsInHalfOpenState: 3
+
+      user-role-cb:
+        slidingWindowSize: 10
+        failureRateThreshold: 50
+        waitDurationInOpenState: 10s
+
+      assignments-cb:
+        slidingWindowSize: 10
+        failureRateThreshold: 50
+
+      questions-cb:
+        slidingWindowSize: 10
+        failureRateThreshold: 50
+
+      submissions-cb:
+        slidingWindowSize: 10
+        failureRateThreshold: 50
+
+      material-cb:
+        slidingWindowSize: 10
+        failureRateThreshold: 50
+
+      recordings-cb:
+        slidingWindowSize: 10
+        failureRateThreshold: 50
+
+      courses-cb:
+        slidingWindowSize: 10
+        failureRateThreshold: 50
+
+
+# =========================
+# RATE LIMITER DEFAULTS
+# =========================
+
+gateway:
+  rate-limiter:
+    default:
+      replenishRate: 10
+      burstCapacity: 20

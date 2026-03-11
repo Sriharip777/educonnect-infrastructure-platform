@@ -1,4 +1,3 @@
-// java
 package com.tcon.api_gateway.config;
 
 import lombok.extern.slf4j.Slf4j;
@@ -14,14 +13,17 @@ import org.springframework.security.web.server.SecurityWebFilterChain;
 @EnableWebFluxSecurity
 public class SecurityConfig {
 
-
     @Bean
     public SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity http) {
+
         log.info("🔒 Configuring API Gateway Security");
 
         http
                 .csrf(ServerHttpSecurity.CsrfSpec::disable)
-//                .cors(ServerHttpSecurity.CorsSpec::disable) // Let YAML handle CORS
+
+                // ✅ Enable CORS (handled by CorsWebFilterConfig)
+                .cors(cors -> {})
+
                 .authorizeExchange(exchange -> exchange
                         .pathMatchers(HttpMethod.OPTIONS).permitAll()
                         .pathMatchers("/actuator/**", "/fallback/**").permitAll()
@@ -30,8 +32,9 @@ public class SecurityConfig {
                 )
                 .httpBasic(ServerHttpSecurity.HttpBasicSpec::disable)
                 .formLogin(ServerHttpSecurity.FormLoginSpec::disable);
-        log.info("✅ Security configured - CORS handled by Gateway YAML");
+
+        log.info("✅ Security configured - CORS handled by CorsWebFilterConfig");
+
         return http.build();
     }
-
 }
