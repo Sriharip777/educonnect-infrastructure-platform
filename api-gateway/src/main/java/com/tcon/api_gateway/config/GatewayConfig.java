@@ -6,7 +6,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.cloud.circuitbreaker.resilience4j.ReactiveResilience4JCircuitBreakerFactory;
-import org.springframework.cloud.circuitbreaker.resilience4j.Resilience4JConfigBuilder;
 import org.springframework.cloud.client.circuitbreaker.Customizer;
 import org.springframework.cloud.gateway.filter.ratelimit.KeyResolver;
 import org.springframework.cloud.gateway.filter.ratelimit.RedisRateLimiter;
@@ -14,6 +13,7 @@ import org.springframework.cloud.gateway.route.RouteLocator;
 import org.springframework.cloud.gateway.route.builder.RouteLocatorBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 
 import java.time.Duration;
 
@@ -22,29 +22,36 @@ import java.time.Duration;
 @RequiredArgsConstructor
 public class GatewayConfig {
 
-    // Inject Key Resolver for rate limiting
     private final KeyResolver userKeyResolver;
 
-    // Inject custom rate limiters (optional - only if you want to use them)
     @Qualifier("authRateLimiter")
     private final RedisRateLimiter authRateLimiter;
 
     @Qualifier("paymentRateLimiter")
     private final RedisRateLimiter paymentRateLimiter;
 
+    // ✅ FIX: Helper to set all HTTP methods on retry
+    private static final HttpMethod[] ALL_METHODS = {
+            HttpMethod.GET, HttpMethod.POST, HttpMethod.PUT,
+            HttpMethod.DELETE, HttpMethod.PATCH, HttpMethod.OPTIONS
+    };
+
     @Bean
     public RouteLocator customRouteLocator(RouteLocatorBuilder builder) {
-        log.info("🚀 Configuring API Gateway Routes with Circuit Breakers, Rate Limiting, and Retry Logic");
+        log.info("🚀 Configuring API Gateway Routes");
 
         return builder.routes()
-                // ===== PASSWORD RESET - NO RATE LIMITING =====
+
+                // ===== PASSWORD RESET =====
                 .route("auth-password-reset", r -> r
                         .path("/api/auth/password/reset-request", "/api/auth/password/reset")
                         .filters(f -> f
-                                .retry(config -> config.setRetries(2)))
+                                .retry(config -> config
+                                        .setRetries(2)
+                                        .setMethods(ALL_METHODS)))   // ✅ FIX
                         .uri("lb://auth-user-service"))
 
-                // ===== Auth User Service (Port 8081) - With Strict Rate Limiting =====
+                // ===== AUTH SERVICE =====
                 .route("auth-service", r -> r
                         .path("/api/auth/**")
                         .filters(f -> f
@@ -57,64 +64,72 @@ public class GatewayConfig {
                                         .setFallbackUri("forward:/fallback/auth"))
                                 .retry(config -> config
                                         .setRetries(2)
+                                        .setMethods(ALL_METHODS)     // ✅ FIX
                                         .setBackoff(Duration.ofMillis(100), Duration.ofMillis(1000), 2, false)))
                         .uri("lb://auth-user-service"))
 
                 .route("student-service", r -> r
                         .path("/api/student/**")
                         .filters(f -> f
-                                .circuitBreaker(c -> c
-                                        .setName("auth-service-cb")
+                                .circuitBreaker(c -> c.setName("auth-service-cb")
                                         .setFallbackUri("forward:/fallback/user"))
-                                .retry(config -> config.setRetries(2)))
+                                .retry(config -> config
+                                        .setRetries(2)
+                                        .setMethods(ALL_METHODS)))   // ✅ FIX
                         .uri("lb://auth-user-service"))
 
                 .route("teacher-service", r -> r
                         .path("/api/teacher/**")
                         .filters(f -> f
-                                .circuitBreaker(c -> c
-                                        .setName("auth-service-cb")
+                                .circuitBreaker(c -> c.setName("auth-service-cb")
                                         .setFallbackUri("forward:/fallback/user"))
-                                .retry(config -> config.setRetries(2)))
+                                .retry(config -> config
+                                        .setRetries(2)
+                                        .setMethods(ALL_METHODS)))   // ✅ FIX
                         .uri("lb://auth-user-service"))
 
                 .route("parent-service", r -> r
                         .path("/api/parent/**")
                         .filters(f -> f
-                                .circuitBreaker(c -> c
-                                        .setName("auth-service-cb")
+                                .circuitBreaker(c -> c.setName("auth-service-cb")
                                         .setFallbackUri("forward:/fallback/user"))
-                                .retry(config -> config.setRetries(2)))
+                                .retry(config -> config
+                                        .setRetries(2)
+                                        .setMethods(ALL_METHODS)))   // ✅ FIX
                         .uri("lb://auth-user-service"))
 
                 .route("admin-service", r -> r
                         .path("/api/admin/**")
                         .filters(f -> f
-                                .circuitBreaker(c -> c
-                                        .setName("auth-service-cb")
+                                .circuitBreaker(c -> c.setName("auth-service-cb")
                                         .setFallbackUri("forward:/fallback/user"))
-                                .retry(config -> config.setRetries(2)))
+                                .retry(config -> config
+                                        .setRetries(2)
+                                        .setMethods(ALL_METHODS)))   // ✅ FIX
                         .uri("lb://auth-user-service"))
 
-                // ✅ CORRECT GATEWAY ROUTE
                 .route("user-service", r -> r
-                        .path("/user-service/api/users/**")  // ✅ Match /user-service/api/users/batch
+                        .path("/user-service/api/users/**")
                         .filters(f -> f
-                                .stripPrefix(1)  // ✅ Remove /user-service, forward /api/users/batch
+                                .stripPrefix(1)
                                 .circuitBreaker(c -> c
                                         .setName("auth-service-cb")
                                         .setFallbackUri("forward:/fallback/user"))
-                                .retry(config -> config.setRetries(2)))
+                                .retry(config -> config
+                                        .setRetries(2)
+                                        .setMethods(ALL_METHODS)))   // ✅ FIX
                         .uri("lb://auth-user-service"))
 
-                // ===== Learning Management Service (Port 8082) =====
+                // ===== LEARNING MANAGEMENT SERVICE =====
                 .route("course-service", r -> r
                         .path("/api/courses/**")
                         .filters(f -> f
                                 .circuitBreaker(c -> c
                                         .setName("booking-service-cb")
                                         .setFallbackUri("forward:/fallback/course"))
-                                .retry(config -> config.setRetries(2)))
+                                .retry(config -> config
+                                        .setRetries(2)
+                                        .setMethods(ALL_METHODS)))   // ✅ FIX
                         .uri("lb://learning-management-service"))
 
                 .route("booking-service", r -> r
@@ -123,7 +138,9 @@ public class GatewayConfig {
                                 .circuitBreaker(c -> c
                                         .setName("booking-service-cb")
                                         .setFallbackUri("forward:/fallback/booking"))
-                                .retry(config -> config.setRetries(2)))
+                                .retry(config -> config
+                                        .setRetries(2)
+                                        .setMethods(ALL_METHODS)))   // ✅ FIX
                         .uri("lb://learning-management-service"))
 
                 .route("demo-service", r -> r
@@ -132,11 +149,56 @@ public class GatewayConfig {
                                 .circuitBreaker(c -> c
                                         .setName("booking-service-cb")
                                         .setFallbackUri("forward:/fallback/demo"))
-                                .retry(config -> config.setRetries(2)))
+                                .retry(config -> config
+                                        .setRetries(2)
+                                        .setMethods(ALL_METHODS)))   // ✅ FIX
                         .uri("lb://learning-management-service"))
 
-                // ===== Communication Service (Port 8083) =====
-                // WebSocket Route (MUST BE FIRST!)
+                .route("grades-subjects-topics", r -> r  // ✅ FIX: Added missing master data routes
+                        .path("/api/grades/**", "/api/subjects/**", "/api/topics/**")
+                        .filters(f -> f
+                                .circuitBreaker(c -> c
+                                        .setName("booking-service-cb")
+                                        .setFallbackUri("forward:/fallback/course"))
+                                .retry(config -> config
+                                        .setRetries(2)
+                                        .setMethods(ALL_METHODS)))
+                        .uri("lb://learning-management-service"))
+
+                .route("assignment-service", r -> r
+                        .path("/api/assignments/**")
+                        .filters(f -> f
+                                .circuitBreaker(c -> c
+                                        .setName("booking-service-cb")
+                                        .setFallbackUri("forward:/fallback/assignment"))
+                                .retry(config -> config
+                                        .setRetries(2)
+                                        .setMethods(ALL_METHODS)))   // ✅ FIX
+                        .uri("lb://learning-management-service"))
+
+                .route("question-service", r -> r
+                        .path("/api/questions/**")
+                        .filters(f -> f
+                                .circuitBreaker(c -> c
+                                        .setName("booking-service-cb")
+                                        .setFallbackUri("forward:/fallback/question"))
+                                .retry(config -> config
+                                        .setRetries(2)
+                                        .setMethods(ALL_METHODS)))   // ✅ FIX
+                        .uri("lb://learning-management-service"))
+
+                .route("submission-service", r -> r
+                        .path("/api/submissions/**")
+                        .filters(f -> f
+                                .circuitBreaker(c -> c
+                                        .setName("booking-service-cb")
+                                        .setFallbackUri("forward:/fallback/submission"))
+                                .retry(config -> config
+                                        .setRetries(2)
+                                        .setMethods(ALL_METHODS)))   // ✅ FIX
+                        .uri("lb://learning-management-service"))
+
+                // ===== COMMUNICATION SERVICE =====
                 .route("communication-ws", r -> r
                         .path("/ws-messaging/**")
                         .filters(f -> f
@@ -145,7 +207,6 @@ public class GatewayConfig {
                                         .setFallbackUri("forward:/fallback/websocket")))
                         .uri("lb:ws://communication-service"))
 
-                // ✅ NEW: Whiteboard Service Routes
                 .route("whiteboard-service", r -> r
                         .path("/api/whiteboard/**")
                         .filters(f -> f
@@ -154,6 +215,7 @@ public class GatewayConfig {
                                         .setFallbackUri("forward:/fallback/whiteboard"))
                                 .retry(config -> config
                                         .setRetries(2)
+                                        .setMethods(ALL_METHODS)     // ✅ FIX
                                         .setBackoff(Duration.ofMillis(100), Duration.ofMillis(1000), 2, false)))
                         .uri("lb://communication-service"))
 
@@ -175,9 +237,10 @@ public class GatewayConfig {
                                 .circuitBreaker(c -> c
                                         .setName("video-service-cb")
                                         .setFallbackUri("forward:/fallback/video"))
-                                .retry(config -> config.setRetries(2)))
+                                .retry(config -> config
+                                        .setRetries(2)
+                                        .setMethods(ALL_METHODS)))   // ✅ FIX
                         .uri("lb://communication-service"))
-
 
                 .route("messaging-service", r -> r
                         .path("/api/messages/**", "/api/conversations/**")
@@ -185,25 +248,25 @@ public class GatewayConfig {
                                 .circuitBreaker(c -> c
                                         .setName("messaging-service-cb")
                                         .setFallbackUri("forward:/fallback/message"))
-                                .retry(config -> config.setRetries(2)))
+                                .retry(config -> config
+                                        .setRetries(2)
+                                        .setMethods(ALL_METHODS)))   // ✅ FIX
                         .uri("lb://communication-service"))
 
-                // ===== Financial Service (Port 8084) - With Strict Rate Limiting =====
+                // ===== FINANCIAL SERVICE =====
                 .route("payment-service", r -> r
                         .path("/api/payments/**", "/api/refunds/**")
                         .filters(f -> f
-                                // Strict rate limiting for payments
                                 .requestRateLimiter(c -> c
                                         .setRateLimiter(paymentRateLimiter)
                                         .setKeyResolver(userKeyResolver)
                                         .setDenyEmptyKey(false))
-                                // Circuit breaker
                                 .circuitBreaker(c -> c
                                         .setName("payment-service-cb")
                                         .setFallbackUri("forward:/fallback/payment"))
-                                // More aggressive retry for payments
                                 .retry(config -> config
                                         .setRetries(3)
+                                        .setMethods(ALL_METHODS)     // ✅ FIX
                                         .setBackoff(Duration.ofMillis(200), Duration.ofMillis(2000), 2, false)))
                         .uri("lb://financial-service"))
 
@@ -217,146 +280,100 @@ public class GatewayConfig {
                                 .circuitBreaker(c -> c
                                         .setName("payment-service-cb")
                                         .setFallbackUri("forward:/fallback/payout"))
-                                .retry(config -> config.setRetries(2)))
+                                .retry(config -> config
+                                        .setRetries(2)
+                                        .setMethods(ALL_METHODS)))   // ✅ FIX
                         .uri("lb://financial-service"))
 
-                // ===== Notification Service (Port 8085) =====
+                // ===== NOTIFICATION SERVICE =====
                 .route("notification-service", r -> r
                         .path("/api/notifications/**")
                         .filters(f -> f
                                 .circuitBreaker(c -> c
                                         .setName("notification-service-cb")
                                         .setFallbackUri("forward:/fallback/notification"))
-                                .retry(config -> config.setRetries(2)))
+                                .retry(config -> config
+                                        .setRetries(2)
+                                        .setMethods(ALL_METHODS)))   // ✅ FIX
                         .uri("lb://notification-service"))
 
-                // ===== Integration Service (Port 8086) =====
+                // ===== INTEGRATION SERVICE =====
                 .route("integration-service", r -> r
                         .path("/api/files/**", "/api/calendar/**", "/api/referrals/**", "/api/analytics/**")
                         .filters(f -> f
                                 .circuitBreaker(c -> c
                                         .setName("integration-service-cb")
                                         .setFallbackUri("forward:/fallback/integration"))
-                                .retry(config -> config.setRetries(2)))
+                                .retry(config -> config
+                                        .setRetries(2)
+                                        .setMethods(ALL_METHODS)))   // ✅ FIX
                         .uri("lb://integration-service"))
 
-                // ===== Content Service (Port 8087) =====
+                // ===== CONTENT SERVICE =====
                 .route("content-service", r -> r
-                        .path("/api/recordings/**", "/api/reviews/**", "/api/materials/**", "/api/assignments/**")
+                        .path("/api/recordings/**", "/api/reviews/**", "/api/materials/**")
                         .filters(f -> f
                                 .circuitBreaker(c -> c
                                         .setName("content-service-cb")
                                         .setFallbackUri("forward:/fallback/content"))
-                                .retry(config -> config.setRetries(2)))
+                                .retry(config -> config
+                                        .setRetries(2)
+                                        .setMethods(ALL_METHODS)))   // ✅ FIX
                         .uri("lb://content-service"))
 
-                // ===== Actuator and Health Check Endpoints =====
                 .route("actuator", r -> r
                         .path("/actuator/**")
                         .filters(f -> f
-                                .retry(config -> config.setRetries(1)))
+                                .retry(config -> config
+                                        .setRetries(1)
+                                        .setMethods(HttpMethod.GET)))
                         .uri("lb://auth-user-service"))
 
                 .build();
     }
 
-    /**
-     * Default Circuit Breaker Configuration
-     * Applied to all routes unless overridden
-     */
-    @Bean
-    public Customizer<ReactiveResilience4JCircuitBreakerFactory> defaultCustomizer() {
-        log.info("🔧 Configuring Default Circuit Breaker Settings");
-
-        return factory -> factory.configureDefault(id -> new Resilience4JConfigBuilder(id)
-                .circuitBreakerConfig(CircuitBreakerConfig.custom()
-                        // Sliding window configuration
-                        .slidingWindowType(CircuitBreakerConfig.SlidingWindowType.COUNT_BASED)
-                        .slidingWindowSize(10)
-                        .minimumNumberOfCalls(5)
-
-                        // Failure thresholds
-                        .failureRateThreshold(50.0f)
-                        .slowCallRateThreshold(50.0f)
-                        .slowCallDurationThreshold(Duration.ofSeconds(2))
-
-                        // Half-open state
-                        .permittedNumberOfCallsInHalfOpenState(5)
-                        .waitDurationInOpenState(Duration.ofSeconds(30))
-                        .automaticTransitionFromOpenToHalfOpenEnabled(true)
-
-                        // Exceptions to record as failures
-                        .recordExceptions(
-                                Exception.class,
-                                RuntimeException.class
-                        )
-
-                        // Exceptions to ignore (not counted as failures)
-                        .ignoreExceptions(
-                                IllegalArgumentException.class
-                        )
-
-                        .build())
-                .timeLimiterConfig(TimeLimiterConfig.custom()
-                        .timeoutDuration(Duration.ofSeconds(5))
-                        .cancelRunningFuture(true)
-                        .build())
-                .build());
-    }
-
-    /**
-     * Custom Circuit Breaker for Payment Service (More restrictive)
-     */
     @Bean
     public Customizer<ReactiveResilience4JCircuitBreakerFactory> paymentCircuitBreakerCustomizer() {
-        log.info("🔧 Configuring Payment Circuit Breaker Settings");
-
         return factory -> factory.configure(builder -> builder
                 .circuitBreakerConfig(CircuitBreakerConfig.custom()
                         .slidingWindowSize(20)
                         .minimumNumberOfCalls(10)
-                        .failureRateThreshold(40.0f)  // More sensitive
-                        .waitDurationInOpenState(Duration.ofSeconds(60))  // Longer wait
+                        .failureRateThreshold(40.0f)
+                        .waitDurationInOpenState(Duration.ofSeconds(60))
                         .slowCallDurationThreshold(Duration.ofSeconds(3))
                         .slowCallRateThreshold(40.0f)
                         .permittedNumberOfCallsInHalfOpenState(3)
                         .automaticTransitionFromOpenToHalfOpenEnabled(true)
                         .build())
                 .timeLimiterConfig(TimeLimiterConfig.custom()
-                        .timeoutDuration(Duration.ofSeconds(15))  // Longer timeout for payments
+                        .timeoutDuration(Duration.ofSeconds(15))
                         .cancelRunningFuture(true)
                         .build())
                 .build(), "payment-service-cb");
     }
 
-    /**
-     * Custom Circuit Breaker for Video Service (More lenient)
-     */
     @Bean
     public Customizer<ReactiveResilience4JCircuitBreakerFactory> videoCircuitBreakerCustomizer() {
-        log.info("🔧 Configuring Video Circuit Breaker Settings");
-
         return factory -> factory.configure(builder -> builder
                 .circuitBreakerConfig(CircuitBreakerConfig.custom()
                         .slidingWindowSize(15)
                         .minimumNumberOfCalls(8)
-                        .failureRateThreshold(60.0f)  // More lenient
+                        .failureRateThreshold(60.0f)
                         .waitDurationInOpenState(Duration.ofSeconds(45))
-                        .slowCallDurationThreshold(Duration.ofSeconds(5))  // Video calls can be slow
+                        .slowCallDurationThreshold(Duration.ofSeconds(5))
                         .slowCallRateThreshold(60.0f)
                         .permittedNumberOfCallsInHalfOpenState(4)
                         .automaticTransitionFromOpenToHalfOpenEnabled(true)
                         .build())
                 .timeLimiterConfig(TimeLimiterConfig.custom()
-                        .timeoutDuration(Duration.ofSeconds(20))  // Longer timeout for video
+                        .timeoutDuration(Duration.ofSeconds(20))
                         .cancelRunningFuture(true)
                         .build())
                 .build(), "video-service-cb");
     }
+
     @Bean
     public Customizer<ReactiveResilience4JCircuitBreakerFactory> messagingCircuitBreakerCustomizer() {
-        log.info("🔧 Configuring Messaging Circuit Breaker Settings");
-
         return factory -> factory.configure(builder -> builder
                 .circuitBreakerConfig(CircuitBreakerConfig.custom()
                         .slidingWindowSize(10)
@@ -375,4 +392,3 @@ public class GatewayConfig {
                 .build(), "messaging-service-cb");
     }
 }
-

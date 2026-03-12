@@ -32,27 +32,49 @@ public class AuthenticationFilter implements GlobalFilter, Ordered {
     private final AntPathMatcher pathMatcher = new AntPathMatcher();
 
     private static final List<String> PUBLIC_PATHS = List.of(
+            // Auth public endpoints
             "/api/auth/register",
             "/api/auth/login",
+            "/api/auth/forgot-password",
             "/api/auth/refresh-token",
             "/api/auth/verify-email",
+            "/api/auth/reset-password",
             "/api/auth/password/reset-request",
             "/api/auth/password/reset",
+            "/api/auth/health",
+
+            // ✅ FIX 1: Added validate-token so LMS Feign calls are not blocked
+            "/api/auth/validate-token",
+
+            // ✅ FIX 2: Added fallback so circuit breaker fallback POST is not blocked
+            "/fallback/**",
+
+            // System
             "/actuator/**",
             "/eureka/**",
             "/api/public/**",
-            "/ws-messaging/info"
+
+            // WebSocket
+            "/ws-messaging/info",
+            "/ws-messaging/**"
     );
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
+
         ServerHttpRequest request = exchange.getRequest();
-        String path = request.getPath().value();
+        String path   = request.getPath().value();
         String method = request.getMethod().toString();
 
         log.debug("🌐 API Gateway: {} {}", method, path);
 
-        // ✅ CRITICAL: Skip OPTIONS requests for CORS preflight
+        // Skip WebSocket paths
+        if (path.startsWith("/ws-messaging")) {
+            log.info("🔓 Skipping JWT for WebSocket path: {}", path);
+            return chain.filter(exchange);
+        }
+
+        // ✅ Skip OPTIONS requests for CORS preflight
         if ("OPTIONS".equalsIgnoreCase(method)) {
             log.debug("✅ OPTIONS request - skipping authentication for CORS preflight");
             return chain.filter(exchange);
@@ -64,23 +86,20 @@ public class AuthenticationFilter implements GlobalFilter, Ordered {
             return chain.filter(exchange);
         }
 
-        // ✅ NEW: Handle WebSocket paths (token in query parameter)
+        // Handle WebSocket paths (token in query parameter)
         if (path.startsWith("/ws-messaging")) {
             return handleWebSocketAuth(exchange, chain);
         }
 
-        // Handle regular HTTP requests (token in Authorization header)
+        // Handle regular HTTP requests
         return handleHttpAuth(exchange, chain);
     }
 
-    /**
-     * ✅ NEW METHOD: Handle WebSocket authentication (token in query parameter)
-     */
     private Mono<Void> handleWebSocketAuth(ServerWebExchange exchange, GatewayFilterChain chain) {
+
         ServerHttpRequest request = exchange.getRequest();
         String path = request.getPath().value();
 
-        // Extract token from query parameter
         List<String> tokenParams = request.getQueryParams().get("access_token");
 
         if (tokenParams == null || tokenParams.isEmpty()) {
@@ -92,23 +111,20 @@ public class AuthenticationFilter implements GlobalFilter, Ordered {
         log.debug("🔍 WebSocket JWT token (length: {})", token.length());
 
         try {
-            // Validate JWT token
             Claims claims = validateToken(token);
             String userId = claims.getSubject();
-            String role = claims.get("role", String.class);
-            String email = claims.get("email", String.class);
+            String role   = claims.get("role", String.class);
+            String email  = claims.get("email", String.class);
 
             log.info("✅ WebSocket JWT VALID: user={}, role={}", email, role);
 
-            // Add user info to headers for downstream services
             ServerHttpRequest modifiedRequest = request.mutate()
                     .header("X-User-Id", userId)
                     .header("X-User-Role", role)
                     .header("X-User-Email", email)
-                    .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)  // ✅ Add Authorization header
+                    .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
                     .build();
 
-            log.debug("➡️ Forwarding WebSocket to communication-service with user headers");
             return chain.filter(exchange.mutate().request(modifiedRequest).build());
 
         } catch (io.jsonwebtoken.ExpiredJwtException e) {
@@ -126,15 +142,12 @@ public class AuthenticationFilter implements GlobalFilter, Ordered {
         }
     }
 
-    /**
-     * Handle regular HTTP authentication (token in Authorization header)
-     */
     private Mono<Void> handleHttpAuth(ServerWebExchange exchange, GatewayFilterChain chain) {
+
         ServerHttpRequest request = exchange.getRequest();
-        String path = request.getPath().value();
+        String path   = request.getPath().value();
         String method = request.getMethod().toString();
 
-        // Extract Authorization header
         String authHeader = request.getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
 
         if (!StringUtils.hasText(authHeader) || !authHeader.startsWith("Bearer ")) {
@@ -142,27 +155,23 @@ public class AuthenticationFilter implements GlobalFilter, Ordered {
             return onError(exchange, "Missing or invalid Authorization header", HttpStatus.UNAUTHORIZED);
         }
 
-        // Extract token and remove ALL whitespace
         String token = authHeader.substring(7).trim().replaceAll("\\s+", "");
         log.debug("🔍 Extracted JWT token (length: {})", token.length());
 
         try {
-            // Validate JWT token
             Claims claims = validateToken(token);
             String userId = claims.getSubject();
-            String role = claims.get("role", String.class);
-            String email = claims.get("email", String.class);
+            String role   = claims.get("role", String.class);
+            String email  = claims.get("email", String.class);
 
             log.info("✅ JWT VALID: user={}, role={}", email, role);
 
-            // Add user info to headers for downstream services
             ServerHttpRequest modifiedRequest = request.mutate()
                     .header("X-User-Id", userId)
                     .header("X-User-Role", role)
                     .header("X-User-Email", email)
                     .build();
 
-            log.debug("➡️ Forwarding to downstream service with user headers");
             return chain.filter(exchange.mutate().request(modifiedRequest).build());
 
         } catch (io.jsonwebtoken.ExpiredJwtException e) {
@@ -188,12 +197,14 @@ public class AuthenticationFilter implements GlobalFilter, Ordered {
     private Claims validateToken(String token) {
         SecretKey key = Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
 
+        // ✅ 0.11.x API — parserBuilder + setSigningKey + parseClaimsJws + getBody
         return Jwts.parserBuilder()
                 .setSigningKey(key)
                 .build()
                 .parseClaimsJws(token)
                 .getBody();
     }
+
 
     private Mono<Void> onError(ServerWebExchange exchange, String message, HttpStatus status) {
         ServerHttpResponse response = exchange.getResponse();
