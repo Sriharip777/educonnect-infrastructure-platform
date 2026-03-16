@@ -125,8 +125,7 @@ spring:
             - name: CircuitBreaker
               args:
                 name: user-role-cb
-                fallbackUri: forward:/fallback/auth
-
+  `
         # =========================
         # LMS - ASSIGNMENTS
         # =========================
