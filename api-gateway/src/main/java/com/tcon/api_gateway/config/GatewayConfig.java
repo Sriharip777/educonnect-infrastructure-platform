@@ -42,7 +42,6 @@ public class GatewayConfig {
         return builder.routes()
 
                 // ===== AUTH SERVICE =====
-                // Password reset first (more specific path, no rate limiter needed)
                 .route("auth-password-reset", r -> r
                         .path("/api/auth/password/reset-request", "/api/auth/password/reset")
                         .filters(f -> f
@@ -172,6 +171,18 @@ public class GatewayConfig {
                                         .setMethods(ALL_METHODS)))
                         .uri("lb://learning-management-service"))
 
+                .route("curriculum-service", r -> r
+                        .path("/api/curriculum/**")
+                        .filters(f -> f
+                                .circuitBreaker(c -> c
+                                        .setName("lms-cb")
+                                        .setFallbackUri("forward:/fallback/course"))
+                                .retry(config -> config
+                                        .setRetries(2)
+                                        .setMethods(ALL_METHODS)))
+                        .uri("lb://learning-management-service"))
+
+
                 .route("assignment-service", r -> r
                         .path("/api/assignments/**")
                         .filters(f -> f
@@ -214,7 +225,6 @@ public class GatewayConfig {
                                         .setFallbackUri("forward:/fallback/websocket")))
                         .uri("lb:ws://communication-service"))
 
-                // ✅ FIXED: Only one whiteboard-service route (was duplicated before)
                 .route("whiteboard-service", r -> r
                         .path("/api/whiteboard/**")
                         .filters(f -> f
@@ -328,7 +338,6 @@ public class GatewayConfig {
                 .build();
     }
 
-    // ✅ FIXED: Added missing lms-cb customizer (was "booking-service-cb" before — unnamed/unconfigured)
     @Bean
     public Customizer<ReactiveResilience4JCircuitBreakerFactory> lmsCircuitBreakerCustomizer() {
         return factory -> factory.configure(builder -> builder
