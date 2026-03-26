@@ -84,6 +84,18 @@ public class GatewayConfig {
                                         .setMethods(ALL_METHODS)))
                         .uri("lb://learning-management-service"))
 
+                .route("student-worksheet-service", r -> r
+                        .path("/api/student/worksheets/**")
+                        .filters(f -> f
+                                .stripPrefix(1)
+                                .circuitBreaker(c -> c
+                                        .setName("lms-cb")
+                                        .setFallbackUri("forward:/fallback/course"))
+                                .retry(config -> config
+                                        .setRetries(2)
+                                        .setMethods(ALL_METHODS)))
+                        .uri("lb://learning-management-service"))
+
                 // ===== USER ROLE SERVICES =====
                 .route("student-service", r -> r
                         .path("/api/student/**")
