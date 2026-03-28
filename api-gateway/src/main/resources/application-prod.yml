@@ -7,9 +7,6 @@ spring:
   application:
     name: API-GATEWAY
 
-  # ================================
-  # KAFKA
-  # ================================
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
     consumer:
@@ -31,9 +28,6 @@ spring:
       request.timeout.ms: 30000
       connections.max.idle.ms: 540000
 
-  # ================================
-  # REDIS
-  # ================================
   data:
     redis:
       host: ${REDIS_HOST:localhost}
@@ -50,9 +44,6 @@ spring:
           min-idle: 2
           max-wait: 1000ms
 
-  # ================================
-  # CLOUD GATEWAY
-  # ================================
   cloud:
     gateway:
       websocket:
@@ -82,181 +73,28 @@ spring:
               - http://localhost:3000
               - http://localhost:5173
               - http://localhost:4200
-            allowedMethods: [GET, POST, PUT, DELETE, PATCH, OPTIONS, HEAD]
+              - http://127.0.0.1:3000
+              - http://127.0.0.1:5173
+              - http://127.0.0.1:4200
+            allowedMethods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - PATCH
+              - OPTIONS
+              - HEAD
             allowedHeaders: "*"
             exposedHeaders:
               - Authorization
               - Content-Type
+              - Content-Length
               - X-User-Id
               - X-User-Role
               - X-User-Email
             allowCredentials: true
             maxAge: 3600
 
-      routes:
-
-        # =========================
-        # AUTH SERVICE
-        # =========================
-        - id: auth-service
-          uri: lb://AUTH-USER-SERVICE
-          order: -20
-          predicates:
-            - Path=/api/auth/**
-          filters:
-            - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_UNIQUE
-            - Retry=2
-            - name: CircuitBreaker
-              args:
-                name: auth-cb
-                fallbackUri: forward:/fallback/auth
-
-        # =========================
-        # USER ROLE SERVICE
-        # =========================
-        - id: user-role-service
-          uri: lb://AUTH-USER-SERVICE
-          order: -15
-          predicates:
-            - Path=/api/student/**,/api/teacher/**,/api/parent/**,/api/admin/**
-          filters:
-            - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_UNIQUE
-            - Retry=2
-            - name: CircuitBreaker
-              args:
-                name: user-role-cb
-  `
-        # =========================
-        # LMS - ASSIGNMENTS
-        # =========================
-        - id: assignments-service
-          uri: lb://LEARNING-MANAGEMENT-SERVICE
-          order: -10
-          predicates:
-            - Path=/api/assignments/**
-          filters:
-            - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_UNIQUE
-            - Retry=2
-            - name: CircuitBreaker
-              args:
-                name: assignments-cb
-                fallbackUri: forward:/fallback/lms
-
-        # =========================
-        # LMS - QUESTIONS
-        # =========================
-        - id: questions-service
-          uri: lb://LEARNING-MANAGEMENT-SERVICE
-          order: -10
-          predicates:
-            - Path=/api/questions/**
-          filters:
-            - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_UNIQUE
-            - Retry=2
-            - name: CircuitBreaker
-              args:
-                name: questions-cb
-                fallbackUri: forward:/fallback/lms
-
-        # =========================
-        # LMS - SUBMISSIONS
-        # =========================
-        - id: submissions-service
-          uri: lb://LEARNING-MANAGEMENT-SERVICE
-          order: -10
-          predicates:
-            - Path=/api/submissions/**
-          filters:
-            - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_UNIQUE
-            - Retry=2
-            - name: CircuitBreaker
-              args:
-                name: submissions-cb
-                fallbackUri: forward:/fallback/lms
-
-        # =========================
-        # LMS - COURSES
-        # =========================
-        - id: courses-service
-          uri: lb://LEARNING-MANAGEMENT-SERVICE
-          order: -10
-          predicates:
-            - Path=/api/courses/**
-          filters:
-            - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_UNIQUE
-            - Retry=2
-            - name: CircuitBreaker
-              args:
-                name: courses-cb
-                fallbackUri: forward:/fallback/lms
-
-        # =========================
-        # CONTENT - MATERIAL
-        # =========================
-        - id: material-service
-          uri: lb://CONTENT-SERVICE
-          order: 10
-          predicates:
-            - Path=/api/material/**
-          filters:
-            - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_UNIQUE
-            - Retry=2
-            - name: CircuitBreaker
-              args:
-                name: material-cb
-                fallbackUri: forward:/fallback/content
-
-        # =========================
-        # CONTENT - RECORDINGS
-        # =========================
-        - id: recordings-service
-          uri: lb://CONTENT-SERVICE
-          order: 10
-          predicates:
-            - Path=/api/recordings/**
-          filters:
-            - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_UNIQUE
-            - Retry=2
-            - name: CircuitBreaker
-              args:
-                name: recordings-cb
-                fallbackUri: forward:/fallback/content
-
-        # =========================
-        # FINANCIAL SERVICE
-        # =========================
-        - id: financial-service
-          uri: lb://FINANCIAL-SERVICE
-          order: 5
-          predicates:
-            - Path=/api/financial/**,/api/payments/**,/api/fees/**
-          filters:
-            - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_UNIQUE
-            - Retry=2
-            - name: CircuitBreaker
-              args:
-                name: financial-cb
-                fallbackUri: forward:/fallback/financial
-
-        # =========================
-        # COMMUNICATION SERVICE
-        # =========================
-        - id: communication-service
-          uri: lb://COMMUNICATION-SERVICE
-          order: 5
-          predicates:
-            - Path=/api/messages/**,/api/notifications/**,/ws-messaging/**
-          filters:
-            - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_UNIQUE
-            - Retry=2
-            - name: CircuitBreaker
-              args:
-                name: communication-cb
-                fallbackUri: forward:/fallback/communication
-
-# ================================
-# EUREKA
-# ================================
 eureka:
   client:
     enabled: ${EUREKA_ENABLED:true}
@@ -267,6 +105,7 @@ eureka:
     registry-fetch-interval-seconds: 15
     eureka-server-connect-timeout-seconds: 10
     eureka-server-read-timeout-seconds: 10
+
   instance:
     hostname: ${EUREKA_INSTANCE_HOSTNAME:localhost}
     prefer-ip-address: false
@@ -280,17 +119,6 @@ eureka:
     lease-renewal-interval-in-seconds: 10
     lease-expiration-duration-in-seconds: 90
 
-# ================================
-# JWT
-# ================================
-jwt:
-  secret: ${JWT_SECRET:my-super-secret-jwt-key-for-educonnect-platform-minimum-256-bits-required}
-  expiration: ${JWT_EXPIRATION:86400000}
-  refresh-expiration: ${JWT_REFRESH_EXPIRATION:604800000}
-
-# ================================
-# ACTUATOR
-# ================================
 management:
   endpoints:
     web:
@@ -303,9 +131,6 @@ management:
     gateway:
       enabled: true
 
-# ================================
-# LOGGING
-# ================================
 logging:
   level:
     root: ${LOG_LEVEL_ROOT:INFO}
@@ -316,60 +141,71 @@ logging:
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
 
-# ================================
-# RESILIENCE4J
-# ================================
+jwt:
+  secret: ${JWT_SECRET:my-super-secret-jwt-key-for-educonnect-platform-minimum-256-bits-required}
+  expiration: ${JWT_EXPIRATION:86400000}
+  refresh-expiration: ${JWT_REFRESH_EXPIRATION:604800000}
+
 resilience4j:
   circuitbreaker:
     instances:
-      auth-cb:
+      auth-service-cb:
         slidingWindowSize: 10
+        minimumNumberOfCalls: 5
         failureRateThreshold: 50
         waitDurationInOpenState: 10s
         permittedNumberOfCallsInHalfOpenState: 3
-      user-role-cb:
-        slidingWindowSize: 10
-        failureRateThreshold: 50
-        waitDurationInOpenState: 10s
-        permittedNumberOfCallsInHalfOpenState: 3
-      assignments-cb:
-        slidingWindowSize: 10
-        failureRateThreshold: 50
-        waitDurationInOpenState: 10s
-      questions-cb:
-        slidingWindowSize: 10
-        failureRateThreshold: 50
-        waitDurationInOpenState: 10s
-      submissions-cb:
-        slidingWindowSize: 10
-        failureRateThreshold: 50
-        waitDurationInOpenState: 10s
-      courses-cb:
-        slidingWindowSize: 10
-        failureRateThreshold: 50
-        waitDurationInOpenState: 10s
-      material-cb:
-        slidingWindowSize: 10
-        failureRateThreshold: 50
-        waitDurationInOpenState: 10s
-      recordings-cb:
-        slidingWindowSize: 10
-        failureRateThreshold: 50
-        waitDurationInOpenState: 10s
-      financial-cb:
-        slidingWindowSize: 10
-        failureRateThreshold: 50
-        waitDurationInOpenState: 10s
-      communication-cb:
-        slidingWindowSize: 10
-        failureRateThreshold: 50
-        waitDurationInOpenState: 10s
+        automaticTransitionFromOpenToHalfOpenEnabled: true
 
-# ================================
-# RATE LIMITER
-# ================================
-gateway:
-  rate-limiter:
-    default:
-      replenishRate: 10
-      burstCapacity: 20
+      lms-cb:
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 5
+        failureRateThreshold: 50
+        waitDurationInOpenState: 30s
+        slowCallDurationThreshold: 5s
+        slowCallRateThreshold: 50
+        permittedNumberOfCallsInHalfOpenState: 3
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+
+      payment-service-cb:
+        slidingWindowSize: 20
+        minimumNumberOfCalls: 10
+        failureRateThreshold: 40
+        waitDurationInOpenState: 60s
+        slowCallDurationThreshold: 3s
+        slowCallRateThreshold: 40
+        permittedNumberOfCallsInHalfOpenState: 3
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+
+      video-service-cb:
+        slidingWindowSize: 15
+        minimumNumberOfCalls: 8
+        failureRateThreshold: 60
+        waitDurationInOpenState: 45s
+        slowCallDurationThreshold: 5s
+        slowCallRateThreshold: 60
+        permittedNumberOfCallsInHalfOpenState: 4
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+
+      messaging-service-cb:
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 5
+        failureRateThreshold: 50
+        waitDurationInOpenState: 30s
+        slowCallDurationThreshold: 3s
+        slowCallRateThreshold: 50
+        permittedNumberOfCallsInHalfOpenState: 3
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+
+  timelimiter:
+    instances:
+      auth-service-cb:
+        timeoutDuration: 5s
+      lms-cb:
+        timeoutDuration: 10s
+      payment-service-cb:
+        timeoutDuration: 15s
+      video-service-cb:
+        timeoutDuration: 20s
+      messaging-service-cb:
+        timeoutDuration: 10s
