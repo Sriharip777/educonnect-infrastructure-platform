@@ -8,8 +8,10 @@ import org.springframework.core.annotation.Order;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.reactive.CorsWebFilter;
 import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource;
+
 import java.util.Arrays;
 import java.util.List;
+
 @Slf4j
 @Configuration
 public class CorsWebFilterConfig {
@@ -21,8 +23,9 @@ public class CorsWebFilterConfig {
 
         CorsConfiguration corsConfig = new CorsConfiguration();
 
+        // Allowed front-end origins
         corsConfig.setAllowedOrigins(Arrays.asList(
-                "https://educonnect.tconsolutions.com",   // ← NEW PROD FRONTEND
+                "https://educonnect.tconsolutions.com",
                 "http://localhost:3000",
                 "http://localhost:5173",
                 "http://localhost:4200",
@@ -46,7 +49,10 @@ public class CorsWebFilterConfig {
                 "X-User-Email"
         ));
 
+        // Required when using cookies / Authorization header
         corsConfig.setAllowCredentials(true);
+
+        // Cache preflight for 1 hour
         corsConfig.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();

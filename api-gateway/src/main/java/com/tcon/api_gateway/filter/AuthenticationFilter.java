@@ -42,6 +42,10 @@ public class AuthenticationFilter implements GlobalFilter, Ordered {
             "/api/auth/password/reset-request",
             "/api/auth/password/reset",
             "/api/auth/health",
+            "/api/courses/public/published",
+            "/api/grades/**",          // add this here
+            "/api/subjects/**",
+            "/api/topics/**",
 
             // ✅ FIX 1: Added validate-token so LMS Feign calls are not blocked
             "/api/auth/validate-token",
