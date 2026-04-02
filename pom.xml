@@ -32,8 +32,6 @@
 
     <properties>
         <java.version>17</java.version>
-        <maven.compiler.source>17</maven.compiler.source>
-        <maven.compiler.target>17</maven.compiler.target>
         <maven.compiler.release>17</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
@@ -42,8 +40,10 @@
         <spring-boot.version>3.2.1</spring-boot.version>
         <spring-cloud.version>2023.0.0</spring-cloud.version>
 
+        <!-- ✅ FIX #1: Upgraded Lombok from 1.18.30 → 1.18.36 (JDK 21 compatible) -->
+        <lombok.version>1.18.36</lombok.version>
+
         <!-- Dependency versions -->
-        <lombok.version>1.18.30</lombok.version>
         <commons-lang3.version>3.13.0</commons-lang3.version>
         <jackson.version>2.15.3</jackson.version>
         <jakarta-validation.version>3.0.2</jakarta-validation.version>
@@ -51,19 +51,13 @@
         <junit.version>5.10.1</junit.version>
 
         <!-- Plugin versions -->
-        <maven-compiler-plugin.version>3.13.0</maven-compiler-plugin.version>
+        <maven-compiler-plugin.version>3.11.0</maven-compiler-plugin.version>
     </properties>
 
     <dependencyManagement>
         <dependencies>
-            <!-- Spring Boot Dependencies -->
-            <dependency>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-dependencies</artifactId>
-                <version>${spring-boot.version}</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
+            <!-- ✅ FIX #2: REMOVED spring-boot-dependencies BOM — already provided by
+                 spring-boot-starter-parent above. Keeping it causes duplicate/conflicting versions. -->
 
             <!-- Spring Cloud Dependencies -->
             <dependency>
@@ -88,7 +82,7 @@
                 <version>${commons-lang3.version}</version>
             </dependency>
 
-            <!-- Lombok -->
+            <!-- ✅ FIX #1: Lombok upgraded to 1.18.36 (JDK 21+ compatible) -->
             <dependency>
                 <groupId>org.projectlombok</groupId>
                 <artifactId>lombok</artifactId>
@@ -102,19 +96,16 @@
                 <artifactId>jackson-databind</artifactId>
                 <version>${jackson.version}</version>
             </dependency>
-
             <dependency>
                 <groupId>com.fasterxml.jackson.core</groupId>
                 <artifactId>jackson-core</artifactId>
                 <version>${jackson.version}</version>
             </dependency>
-
             <dependency>
                 <groupId>com.fasterxml.jackson.core</groupId>
                 <artifactId>jackson-annotations</artifactId>
                 <version>${jackson.version}</version>
             </dependency>
-
             <dependency>
                 <groupId>com.fasterxml.jackson.datatype</groupId>
                 <artifactId>jackson-datatype-jsr310</artifactId>
@@ -136,20 +127,18 @@
                 <scope>test</scope>
             </dependency>
 
-            <!-- JWT Dependencies - EXPLICITLY DEFINED -->
+            <!-- JWT -->
             <dependency>
                 <groupId>io.jsonwebtoken</groupId>
                 <artifactId>jjwt-api</artifactId>
                 <version>${jjwt.version}</version>
             </dependency>
-
             <dependency>
                 <groupId>io.jsonwebtoken</groupId>
                 <artifactId>jjwt-impl</artifactId>
                 <version>${jjwt.version}</version>
                 <scope>runtime</scope>
             </dependency>
-
             <dependency>
                 <groupId>io.jsonwebtoken</groupId>
                 <artifactId>jjwt-jackson</artifactId>
@@ -157,31 +146,27 @@
                 <scope>runtime</scope>
             </dependency>
 
-            <!-- Internal Shared Libraries - EXPLICITLY DEFINED -->
+            <!-- Internal Shared Libraries -->
             <dependency>
                 <groupId>com.tcon</groupId>
                 <artifactId>common-models</artifactId>
                 <version>${project.version}</version>
             </dependency>
-
             <dependency>
                 <groupId>com.tcon</groupId>
                 <artifactId>common-security</artifactId>
                 <version>${project.version}</version>
             </dependency>
-
             <dependency>
                 <groupId>com.tcon</groupId>
                 <artifactId>common-exceptions</artifactId>
                 <version>${project.version}</version>
             </dependency>
-
             <dependency>
                 <groupId>com.tcon</groupId>
                 <artifactId>common-utils</artifactId>
                 <version>${project.version}</version>
             </dependency>
-
             <dependency>
                 <groupId>com.tcon</groupId>
                 <artifactId>event-commons</artifactId>
@@ -212,14 +197,17 @@
                     <artifactId>maven-compiler-plugin</artifactId>
                     <version>${maven-compiler-plugin.version}</version>
                     <configuration>
-                        <source>${java.version}</source>
-                        <target>${java.version}</target>
+                        <!-- ✅ FIX #3: Use ONLY <release> — remove <source> and <target>
+                             Having all three simultaneously causes compiler conflicts -->
                         <release>${java.version}</release>
                         <encoding>UTF-8</encoding>
                         <compilerArgs>
                             <arg>-parameters</arg>
+                            <!-- ✅ FIX #4: Force UTF-8 encoding (overrides IBM437) -->
+                            <arg>-J-Dfile.encoding=UTF-8</arg>
                         </compilerArgs>
                         <annotationProcessorPaths>
+                            <!-- ✅ FIX #1: Lombok 1.18.36 in annotationProcessorPaths -->
                             <path>
                                 <groupId>org.projectlombok</groupId>
                                 <artifactId>lombok</artifactId>

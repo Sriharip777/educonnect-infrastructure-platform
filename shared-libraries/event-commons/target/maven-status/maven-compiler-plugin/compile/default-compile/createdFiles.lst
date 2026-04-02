@@ -4,6 +4,7 @@ com\tcon\events\events\BookingCancelledEvent.class
 com\tcon\events\events\PaymentFailedEvent.class
 com\tcon\events\events\UserRegisteredEvent.class
 com\tcon\events\BaseEvent.class
+com\tcon\events\events\NotificationEvent.class
 com\tcon\events\events\PaymentSuccessEvent.class
 com\tcon\events\events\RefundRequestedEvent.class
 com\tcon\events\events\ClassCompletedEvent.class
