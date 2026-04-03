@@ -25,5 +25,6 @@
     <file url="file://$PROJECT_DIR$/src/main/resources" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/../financial-service/src/main/java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/../learning-management-service/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/../notification-service/src/main/java" charset="UTF-8" />
   </component>
 </project>

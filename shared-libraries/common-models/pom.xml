@@ -18,6 +18,7 @@
     <description>Shared DTOs, Enums, and Constants</description>
 
     <dependencies>
+        <!-- ✅ Lombok 1.18.36 inherited from parent -->
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
@@ -35,12 +36,12 @@
         </dependency>
     </dependencies>
 
-    <!-- ADD THIS BUILD SECTION -->
     <build>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
+                <!-- ✅ No version override needed — inherited from parent pluginManagement -->
             </plugin>
         </plugins>
     </build>

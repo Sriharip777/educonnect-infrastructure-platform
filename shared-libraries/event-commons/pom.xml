@@ -23,7 +23,6 @@
             <artifactId>spring-kafka</artifactId>
         </dependency>
 
-        <!-- ADD THIS - SLF4J for Logging -->
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>

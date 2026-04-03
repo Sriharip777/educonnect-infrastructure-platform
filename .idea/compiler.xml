@@ -8,6 +8,7 @@
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
         <module name="config-server" />
+        <module name="learning-management-service" />
         <module name="service-discovery" />
       </profile>
       <profile name="Annotation profile for auth-user-service" enabled="true">
@@ -48,7 +49,7 @@
         </processorPath>
         <module name="communication-service" />
       </profile>
-      <profile name="Annotation profile for Learning Management Service" enabled="true">
+      <profile name="Annotation profile for notification-service" enabled="true">
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
@@ -56,7 +57,7 @@
           <entry name="$MAVEN_REPOSITORY$/org/projectlombok/lombok/1.18.42/lombok-1.18.42.jar" />
         </processorPath>
         <module name="api-gateway" />
-        <module name="learning-management-service" />
+        <module name="notification-service" />
         <module name="financial-service" />
       </profile>
     </annotationProcessing>
@@ -79,6 +80,7 @@
       <module name="event-commons" options="-parameters -parameters" />
       <module name="financial-service" options="-parameters" />
       <module name="learning-management-service" options="-parameters" />
+      <module name="notification-service" options="-parameters" />
       <module name="service-discovery" options="-parameters" />
       <module name="shared-libraries" options="-parameters" />
     </option>
