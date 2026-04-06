@@ -142,6 +142,7 @@ public class GatewayConfig {
                                         .setMethods(ALL_METHODS)))
                         .uri("lb://auth-user-service"))
 
+
                 .route("admin-service", r -> r
                         .path("/api/admin/**")
                         .filters(f -> f
@@ -263,6 +264,17 @@ public class GatewayConfig {
                                 .circuitBreaker(c -> c
                                         .setName("lms-cb")
                                         .setFallbackUri("forward:/fallback/submission"))
+                                .retry(config -> config
+                                        .setRetries(2)
+                                        .setMethods(ALL_METHODS)))
+                        .uri("lb://learning-management-service"))
+
+                .route("resource-service", r -> r
+                        .path("/api/resources/**")
+                        .filters(f -> f
+                                .circuitBreaker(c -> c
+                                        .setName("lms-cb")
+                                        .setFallbackUri("forward:/fallback/course"))
                                 .retry(config -> config
                                         .setRetries(2)
                                         .setMethods(ALL_METHODS)))

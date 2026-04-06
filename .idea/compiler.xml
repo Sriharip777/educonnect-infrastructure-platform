@@ -25,19 +25,6 @@
         </processorPath>
         <module name="auth-user-service" />
       </profile>
-      <profile name="Annotation profile for Infrastructure Platform" enabled="true">
-        <sourceOutputDir name="target/generated-sources/annotations" />
-        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
-        <outputRelativeToContentRoot value="true" />
-        <processorPath useClasspath="false">
-          <entry name="$MAVEN_REPOSITORY$/org/projectlombok/lombok/1.18.30/lombok-1.18.30.jar" />
-        </processorPath>
-        <module name="common-security" />
-        <module name="common-utils" />
-        <module name="common-exceptions" />
-        <module name="common-models" />
-        <module name="event-commons" />
-      </profile>
       <profile name="Annotation profile for communication-service" enabled="true">
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
@@ -48,6 +35,20 @@
           <entry name="$MAVEN_REPOSITORY$/org/projectlombok/lombok-mapstruct-binding/0.2.0/lombok-mapstruct-binding-0.2.0.jar" />
         </processorPath>
         <module name="communication-service" />
+      </profile>
+      <profile name="Annotation profile for Infrastructure Platform" enabled="true">
+        <sourceOutputDir name="target/generated-sources/annotations" />
+        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
+        <outputRelativeToContentRoot value="true" />
+        <processorPath useClasspath="false">
+          <entry name="$MAVEN_REPOSITORY$/org/projectlombok/lombok/1.18.36/lombok-1.18.36.jar" />
+          <entry name="$MAVEN_REPOSITORY$/org/projectlombok/lombok/1.18.36/lombok-1.18.36.jar" />
+        </processorPath>
+        <module name="common-security" />
+        <module name="common-utils" />
+        <module name="common-exceptions" />
+        <module name="common-models" />
+        <module name="event-commons" />
       </profile>
       <profile name="Annotation profile for notification-service" enabled="true">
         <sourceOutputDir name="target/generated-sources/annotations" />
@@ -70,14 +71,14 @@
     <option name="ADDITIONAL_OPTIONS_OVERRIDE">
       <module name="api-gateway" options="-parameters" />
       <module name="auth-user-service" options="-parameters -Amapstruct.defaultComponentModel=spring -Amapstruct.unmappedTargetPolicy=IGNORE" />
-      <module name="common-exceptions" options="-parameters -parameters" />
-      <module name="common-models" options="-parameters -parameters" />
+      <module name="common-exceptions" options="-parameters -parameters -J-Dfile.encoding=UTF-8" />
+      <module name="common-models" options="-parameters -parameters -J-Dfile.encoding=UTF-8" />
       <module name="common-models (1) (com.tutoring)" options="-parameters" />
-      <module name="common-security" options="-parameters -parameters" />
-      <module name="common-utils" options="-parameters -parameters" />
+      <module name="common-security" options="-parameters -parameters -J-Dfile.encoding=UTF-8" />
+      <module name="common-utils" options="-parameters -parameters -J-Dfile.encoding=UTF-8" />
       <module name="communication-service" options="-parameters -parameters" />
       <module name="config-server" options="-parameters" />
-      <module name="event-commons" options="-parameters -parameters" />
+      <module name="event-commons" options="-parameters -parameters -J-Dfile.encoding=UTF-8" />
       <module name="financial-service" options="-parameters" />
       <module name="learning-management-service" options="-parameters" />
       <module name="notification-service" options="-parameters" />
