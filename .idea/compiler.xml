@@ -8,7 +8,6 @@
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
         <module name="config-server" />
-        <module name="learning-management-service" />
         <module name="service-discovery" />
       </profile>
       <profile name="Annotation profile for auth-user-service" enabled="true">
@@ -60,6 +59,15 @@
         <module name="api-gateway" />
         <module name="notification-service" />
         <module name="financial-service" />
+      </profile>
+      <profile name="Annotation profile for Learning Management Service" enabled="true">
+        <sourceOutputDir name="target/generated-sources/annotations" />
+        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
+        <outputRelativeToContentRoot value="true" />
+        <processorPath useClasspath="false">
+          <entry name="$MAVEN_REPOSITORY$/org/projectlombok/lombok/1.18.38/lombok-1.18.38.jar" />
+        </processorPath>
+        <module name="learning-management-service" />
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel>

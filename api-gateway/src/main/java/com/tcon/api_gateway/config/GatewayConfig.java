@@ -2,7 +2,6 @@ package com.tcon.api_gateway.config;
 
 import io.github.resilience4j.circuitbreaker.CircuitBreakerConfig;
 import io.github.resilience4j.timelimiter.TimeLimiterConfig;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.cloud.circuitbreaker.resilience4j.ReactiveResilience4JCircuitBreakerFactory;
@@ -19,21 +18,29 @@ import java.time.Duration;
 
 @Slf4j
 @Configuration
-@RequiredArgsConstructor
+// ✅ FIX: Removed @RequiredArgsConstructor — Lombok does NOT carry @Qualifier into
+//         the generated constructor, causing NoUniqueBeanDefinitionException at startup
+//         when two RedisRateLimiter beans exist. Manual constructor is required here.
 public class GatewayConfig {
 
     private final KeyResolver userKeyResolver;
-
-    @Qualifier("authRateLimiter")
     private final RedisRateLimiter authRateLimiter;
-
-    @Qualifier("paymentRateLimiter")
     private final RedisRateLimiter paymentRateLimiter;
 
     private static final HttpMethod[] ALL_METHODS = {
             HttpMethod.GET, HttpMethod.POST, HttpMethod.PUT,
             HttpMethod.DELETE, HttpMethod.PATCH, HttpMethod.OPTIONS
     };
+
+    // ✅ FIX: Manual constructor with @Qualifier to correctly resolve two RedisRateLimiter beans
+    public GatewayConfig(
+            KeyResolver userKeyResolver,
+            @Qualifier("authRateLimiter") RedisRateLimiter authRateLimiter,
+            @Qualifier("paymentRateLimiter") RedisRateLimiter paymentRateLimiter) {
+        this.userKeyResolver    = userKeyResolver;
+        this.authRateLimiter    = authRateLimiter;
+        this.paymentRateLimiter = paymentRateLimiter;
+    }
 
     @Bean
     public RouteLocator customRouteLocator(RouteLocatorBuilder builder) {
@@ -69,9 +76,10 @@ public class GatewayConfig {
                                         .setBackoff(Duration.ofMillis(100), Duration.ofMillis(1000), 2, false)))
                         .uri("lb://auth-user-service"))
 
-
-                // ===== WORKSHEET SERVICE (ADDED) =====
-                .route("worksheet-service", r -> r
+                // ===== WORKSHEET SERVICE =====
+                // ✅ FIX: Renamed route id from "worksheet-service" to "worksheet-admin-service"
+                //         Route IDs must be unique across the entire route chain
+                .route("worksheet-admin-service", r -> r
                         .path("/api/admin/worksheets/**")
                         .filters(f -> f
                                 .stripPrefix(1)
@@ -107,7 +115,6 @@ public class GatewayConfig {
                                         .setMethods(ALL_METHODS)))
                         .uri("lb://auth-user-service"))
 
-
                 .route("teacher-worksheet-service", r -> r
                         .path("/api/teacher/worksheets/**")
                         .filters(f -> f
@@ -142,7 +149,6 @@ public class GatewayConfig {
                                         .setMethods(ALL_METHODS)))
                         .uri("lb://auth-user-service"))
 
-
                 .route("admin-service", r -> r
                         .path("/api/admin/**")
                         .filters(f -> f
@@ -166,7 +172,10 @@ public class GatewayConfig {
                                         .setMethods(ALL_METHODS)))
                         .uri("lb://auth-user-service"))
 
-                // ===== WORKSHEET PUBLIC/STUDENT SERVICE (ADD HERE) =====
+                // ===== WORKSHEET PUBLIC SERVICE =====
+                // ⚠️ NOTE: stripPrefix(1) strips /api → LMS receives /worksheets/**
+                //          Verify your LMS controller is mapped to /worksheets/** not /api/worksheets/**
+                //          If LMS expects /api/worksheets/**, remove stripPrefix(1) here
                 .route("worksheet-public-service", r -> r
                         .path("/api/worksheets/**")
                         .filters(f -> f
@@ -235,7 +244,6 @@ public class GatewayConfig {
                                         .setMethods(ALL_METHODS)))
                         .uri("lb://learning-management-service"))
 
-
                 .route("assignment-service", r -> r
                         .path("/api/assignments/**")
                         .filters(f -> f
@@ -289,6 +297,9 @@ public class GatewayConfig {
                                         .setFallbackUri("forward:/fallback/websocket")))
                         .uri("lb:ws://communication-service"))
 
+                // ✅ FIX: Removed duplicate "whiteboard-service" route that was registered twice
+                //         with same route id. Kept the first definition (with setMethods(ALL_METHODS))
+                //         which is more complete. The second duplicate entry is deleted.
                 .route("whiteboard-service", r -> r
                         .path("/api/whiteboard/**")
                         .filters(f -> f
@@ -298,18 +309,6 @@ public class GatewayConfig {
                                 .retry(config -> config
                                         .setRetries(2)
                                         .setMethods(ALL_METHODS)
-                                        .setBackoff(Duration.ofMillis(100), Duration.ofMillis(1000), 2, false)))
-                        .uri("lb://communication-service"))
-
-                // ✅ NEW: Whiteboard Service Routes
-                .route("whiteboard-service", r -> r
-                        .path("/api/whiteboard/**")
-                        .filters(f -> f
-                                .circuitBreaker(c -> c
-                                        .setName("video-service-cb")
-                                        .setFallbackUri("forward:/fallback/whiteboard"))
-                                .retry(config -> config
-                                        .setRetries(2)
                                         .setBackoff(Duration.ofMillis(100), Duration.ofMillis(1000), 2, false)))
                         .uri("lb://communication-service"))
 
@@ -414,6 +413,8 @@ public class GatewayConfig {
                 .build();
     }
 
+    // ===== CIRCUIT BREAKER CUSTOMIZERS =====
+
     @Bean
     public Customizer<ReactiveResilience4JCircuitBreakerFactory> lmsCircuitBreakerCustomizer() {
         return factory -> factory.configure(builder -> builder
@@ -510,5 +511,69 @@ public class GatewayConfig {
                         .cancelRunningFuture(true)
                         .build())
                 .build(), "messaging-service-cb");
+    }
+
+    // ✅ NEW: notification-service-cb customizer was missing.
+    //         Route was using this name but no customizer existed, falling back to Resilience4j defaults.
+    @Bean
+    public Customizer<ReactiveResilience4JCircuitBreakerFactory> notificationCircuitBreakerCustomizer() {
+        return factory -> factory.configure(builder -> builder
+                .circuitBreakerConfig(CircuitBreakerConfig.custom()
+                        .slidingWindowSize(10)
+                        .minimumNumberOfCalls(5)
+                        .failureRateThreshold(50.0f)
+                        .waitDurationInOpenState(Duration.ofSeconds(20))
+                        .permittedNumberOfCallsInHalfOpenState(3)
+                        .automaticTransitionFromOpenToHalfOpenEnabled(true)
+                        .build())
+                .timeLimiterConfig(TimeLimiterConfig.custom()
+                        .timeoutDuration(Duration.ofSeconds(5))
+                        .cancelRunningFuture(true)
+                        .build())
+                .build(), "notification-service-cb");
+    }
+
+    // ✅ NEW: integration-service-cb customizer was missing.
+    //         Route was using this name but no customizer existed, falling back to Resilience4j defaults.
+    @Bean
+    public Customizer<ReactiveResilience4JCircuitBreakerFactory> integrationCircuitBreakerCustomizer() {
+        return factory -> factory.configure(builder -> builder
+                .circuitBreakerConfig(CircuitBreakerConfig.custom()
+                        .slidingWindowSize(10)
+                        .minimumNumberOfCalls(5)
+                        .failureRateThreshold(50.0f)
+                        .waitDurationInOpenState(Duration.ofSeconds(30))
+                        .slowCallDurationThreshold(Duration.ofSeconds(5))
+                        .slowCallRateThreshold(50.0f)
+                        .permittedNumberOfCallsInHalfOpenState(3)
+                        .automaticTransitionFromOpenToHalfOpenEnabled(true)
+                        .build())
+                .timeLimiterConfig(TimeLimiterConfig.custom()
+                        .timeoutDuration(Duration.ofSeconds(15))
+                        .cancelRunningFuture(true)
+                        .build())
+                .build(), "integration-service-cb");
+    }
+
+    // ✅ NEW: content-service-cb customizer was missing.
+    //         Route was using this name but no customizer existed, falling back to Resilience4j defaults.
+    @Bean
+    public Customizer<ReactiveResilience4JCircuitBreakerFactory> contentCircuitBreakerCustomizer() {
+        return factory -> factory.configure(builder -> builder
+                .circuitBreakerConfig(CircuitBreakerConfig.custom()
+                        .slidingWindowSize(10)
+                        .minimumNumberOfCalls(5)
+                        .failureRateThreshold(50.0f)
+                        .waitDurationInOpenState(Duration.ofSeconds(30))
+                        .slowCallDurationThreshold(Duration.ofSeconds(5))
+                        .slowCallRateThreshold(50.0f)
+                        .permittedNumberOfCallsInHalfOpenState(3)
+                        .automaticTransitionFromOpenToHalfOpenEnabled(true)
+                        .build())
+                .timeLimiterConfig(TimeLimiterConfig.custom()
+                        .timeoutDuration(Duration.ofSeconds(15))
+                        .cancelRunningFuture(true)
+                        .build())
+                .build(), "content-service-cb");
     }
 }
