@@ -74,7 +74,6 @@ public class GatewayConfig {
                 .route("worksheet-service", r -> r
                         .path("/api/admin/worksheets/**")
                         .filters(f -> f
-                                .stripPrefix(1)
                                 .circuitBreaker(c -> c
                                         .setName("lms-cb")
                                         .setFallbackUri("forward:/fallback/course"))
@@ -86,7 +85,6 @@ public class GatewayConfig {
                 .route("student-worksheet-service", r -> r
                         .path("/api/student/worksheets/**")
                         .filters(f -> f
-                                .stripPrefix(1)
                                 .circuitBreaker(c -> c
                                         .setName("lms-cb")
                                         .setFallbackUri("forward:/fallback/course"))
@@ -111,7 +109,6 @@ public class GatewayConfig {
                 .route("teacher-worksheet-service", r -> r
                         .path("/api/teacher/worksheets/**")
                         .filters(f -> f
-                                .stripPrefix(1)
                                 .circuitBreaker(c -> c
                                         .setName("lms-cb")
                                         .setFallbackUri("forward:/fallback/course"))
@@ -157,7 +154,6 @@ public class GatewayConfig {
                 .route("user-service", r -> r
                         .path("/user-service/api/users/**")
                         .filters(f -> f
-                                .stripPrefix(1)
                                 .circuitBreaker(c -> c
                                         .setName("auth-service-cb")
                                         .setFallbackUri("forward:/fallback/user"))
@@ -170,7 +166,6 @@ public class GatewayConfig {
                 .route("worksheet-public-service", r -> r
                         .path("/api/worksheets/**")
                         .filters(f -> f
-                                .stripPrefix(1)
                                 .circuitBreaker(c -> c
                                         .setName("lms-cb")
                                         .setFallbackUri("forward:/fallback/course"))

@@ -8,7 +8,6 @@
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
         <module name="config-server" />
-        <module name="learning-management-service" />
         <module name="service-discovery" />
       </profile>
       <profile name="Annotation profile for auth-user-service" enabled="true">
@@ -61,6 +60,15 @@
         <module name="notification-service" />
         <module name="financial-service" />
       </profile>
+      <profile name="Annotation profile for Learning Management Service" enabled="true">
+        <sourceOutputDir name="target/generated-sources/annotations" />
+        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
+        <outputRelativeToContentRoot value="true" />
+        <processorPath useClasspath="false">
+          <entry name="$MAVEN_REPOSITORY$/org/projectlombok/lombok/1.18.38/lombok-1.18.38.jar" />
+        </processorPath>
+        <module name="learning-management-service" />
+      </profile>
     </annotationProcessing>
     <bytecodeTargetLevel>
       <module name="common-models (1) (com.tutoring)" target="17" />
@@ -70,7 +78,8 @@
   <component name="JavacSettings">
     <option name="ADDITIONAL_OPTIONS_OVERRIDE">
       <module name="api-gateway" options="-parameters" />
-      <module name="auth-user-service" options="-parameters -Amapstruct.defaultComponentModel=spring -Amapstruct.unmappedTargetPolicy=IGNORE" />
+      <module name="auth-user-service" options="-parameters -parameters -J-Dfile.encoding=UTF-8" />
+      <module name="auth-user-service (1)" options="-parameters -Amapstruct.defaultComponentModel=spring -Amapstruct.unmappedTargetPolicy=IGNORE" />
       <module name="common-exceptions" options="-parameters -parameters -J-Dfile.encoding=UTF-8" />
       <module name="common-models" options="-parameters -parameters -J-Dfile.encoding=UTF-8" />
       <module name="common-models (1) (com.tutoring)" options="-parameters" />
