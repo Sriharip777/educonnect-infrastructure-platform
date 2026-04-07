@@ -78,7 +78,8 @@
   <component name="JavacSettings">
     <option name="ADDITIONAL_OPTIONS_OVERRIDE">
       <module name="api-gateway" options="-parameters" />
-      <module name="auth-user-service" options="-parameters -Amapstruct.defaultComponentModel=spring -Amapstruct.unmappedTargetPolicy=IGNORE" />
+      <module name="auth-user-service" options="-parameters -parameters -J-Dfile.encoding=UTF-8" />
+      <module name="auth-user-service (1)" options="-parameters -Amapstruct.defaultComponentModel=spring -Amapstruct.unmappedTargetPolicy=IGNORE" />
       <module name="common-exceptions" options="-parameters -parameters -J-Dfile.encoding=UTF-8" />
       <module name="common-models" options="-parameters -parameters -J-Dfile.encoding=UTF-8" />
       <module name="common-models (1) (com.tutoring)" options="-parameters" />
