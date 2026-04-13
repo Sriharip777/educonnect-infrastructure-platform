@@ -1,36 +1,23 @@
 server:
   port: ${PORT:8080}
+  shutdown: graceful
   netty:
     connection-timeout: 30s
 
 spring:
   application:
-    name: API-GATEWAY
+    name: api-gateway
 
-  kafka:
-    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
-    consumer:
-      group-id: ${KAFKA_CONSUMER_GROUP_ID:api-gateway-group}
-      auto-offset-reset: latest
-      enable-auto-commit: false
-      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      session-timeout-ms: 60000
-      heartbeat-interval-ms: 20000
-      max-poll-interval-ms: 300000
-    producer:
-      key-serializer: org.apache.kafka.common.serialization.StringSerializer
-      value-serializer: org.apache.kafka.common.serialization.StringSerializer
-      acks: all
-      retries: 3
-    properties:
-      security.protocol: ${KAFKA_SECURITY_PROTOCOL:PLAINTEXT}
-      request.timeout.ms: 30000
-      connections.max.idle.ms: 540000
+  output:
+    ansi:
+      enabled: NEVER
+
+  lifecycle:
+    timeout-per-shutdown-phase: 30s
 
   data:
     redis:
-      host: ${REDIS_HOST:localhost}
+      host: ${REDIS_HOST}
       port: ${REDIS_PORT:6379}
       password: ${REDIS_PASSWORD:}
       timeout: ${REDIS_TIMEOUT:5000ms}
@@ -41,8 +28,8 @@ spring:
         pool:
           max-active: ${REDIS_POOL_MAX_ACTIVE:10}
           max-idle: ${REDIS_POOL_MAX_IDLE:5}
-          min-idle: 2
-          max-wait: 1000ms
+          min-idle: ${REDIS_POOL_MIN_IDLE:2}
+          max-wait: ${REDIS_POOL_MAX_WAIT:1000ms}
 
   cloud:
     gateway:
@@ -52,7 +39,7 @@ spring:
       discovery:
         locator:
           enabled: true
-          lower-case-service-id: false
+          lower-case-service-id: true
 
       httpclient:
         connect-timeout: 60000
@@ -64,52 +51,23 @@ spring:
       default-filters:
         - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_UNIQUE
 
-      globalcors:
-        add-to-simple-url-handler-mapping: true
-        corsConfigurations:
-          '[/**]':
-            allowedOrigins:
-              - https://educonnect.tconsolutions.com
-              - http://localhost:3000
-              - http://localhost:5173
-              - http://localhost:4200
-              - http://127.0.0.1:3000
-              - http://127.0.0.1:5173
-              - http://127.0.0.1:4200
-            allowedMethods:
-              - GET
-              - POST
-              - PUT
-              - DELETE
-              - PATCH
-              - OPTIONS
-              - HEAD
-            allowedHeaders: "*"
-            exposedHeaders:
-              - Authorization
-              - Content-Type
-              - Content-Length
-              - X-User-Id
-              - X-User-Role
-              - X-User-Email
-            allowCredentials: true
-            maxAge: 3600
-
 eureka:
   client:
     enabled: ${EUREKA_ENABLED:true}
     register-with-eureka: true
     fetch-registry: true
     service-url:
-      defaultZone: ${EUREKA_URL:https://educonservicediscovery-64307221061.asia-south1.run.app/eureka/}
+      defaultZone: ${EUREKA_URL}
     registry-fetch-interval-seconds: 15
     eureka-server-connect-timeout-seconds: 10
     eureka-server-read-timeout-seconds: 10
+    healthcheck:
+      enabled: false
 
   instance:
-    hostname: ${EUREKA_INSTANCE_HOSTNAME:localhost}
+    hostname: ${EUREKA_INSTANCE_HOSTNAME}
     prefer-ip-address: false
-    instance-id: ${eureka.instance.hostname}:${server.port}
+    instance-id: ${spring.application.name}:${eureka.instance.hostname}
     non-secure-port-enabled: false
     secure-port-enabled: true
     secure-port: 443
@@ -128,7 +86,11 @@ management:
   endpoint:
     health:
       show-details: always
+      show-components: always
     gateway:
+      enabled: true
+  health:
+    redis:
       enabled: true
 
 logging:
@@ -138,11 +100,13 @@ logging:
     org.springframework.cloud.gateway: INFO
     com.netflix.discovery: INFO
     org.springframework.data.redis: WARN
+    reactor.netty: WARN
+    io.netty: ERROR
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
 
 jwt:
-  secret: ${JWT_SECRET:my-super-secret-jwt-key-for-educonnect-platform-minimum-256-bits-required}
+  secret: ${JWT_SECRET}
   expiration: ${JWT_EXPIRATION:86400000}
   refresh-expiration: ${JWT_REFRESH_EXPIRATION:604800000}
 
@@ -197,6 +161,34 @@ resilience4j:
         permittedNumberOfCallsInHalfOpenState: 3
         automaticTransitionFromOpenToHalfOpenEnabled: true
 
+      notification-service-cb:
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 5
+        failureRateThreshold: 50
+        waitDurationInOpenState: 20s
+        permittedNumberOfCallsInHalfOpenState: 3
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+
+      integration-service-cb:
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 5
+        failureRateThreshold: 50
+        waitDurationInOpenState: 30s
+        slowCallDurationThreshold: 5s
+        slowCallRateThreshold: 50
+        permittedNumberOfCallsInHalfOpenState: 3
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+
+      content-service-cb:
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 5
+        failureRateThreshold: 50
+        waitDurationInOpenState: 30s
+        slowCallDurationThreshold: 5s
+        slowCallRateThreshold: 50
+        permittedNumberOfCallsInHalfOpenState: 3
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+
   timelimiter:
     instances:
       auth-service-cb:
@@ -209,3 +201,15 @@ resilience4j:
         timeoutDuration: 20s
       messaging-service-cb:
         timeoutDuration: 10s
+      notification-service-cb:
+        timeoutDuration: 5s
+      integration-service-cb:
+        timeoutDuration: 15s
+      content-service-cb:
+        timeoutDuration: 15s
+
+gateway:
+  rate-limiter:
+    default:
+      replenishRate: ${GATEWAY_RATE_LIMIT_REPLENISH:10}
+      burstCapacity: ${GATEWAY_RATE_LIMIT_BURST:20}
