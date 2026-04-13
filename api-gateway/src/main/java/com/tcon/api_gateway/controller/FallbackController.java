@@ -118,6 +118,12 @@ public class FallbackController {
         return fallbackResponse("content-service");
     }
 
+    @RequestMapping("/fallback/support")
+    public ResponseEntity<Map<String, Object>> supportFallback() {
+        log.warn("⚠️ Support service fallback triggered");
+        return fallbackResponse("customer-support-service");
+    }
+
     // ✅ Shared helper — keeps all fallbacks consistent
     private ResponseEntity<Map<String, Object>> fallbackResponse(String service) {
         return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(Map.of(
