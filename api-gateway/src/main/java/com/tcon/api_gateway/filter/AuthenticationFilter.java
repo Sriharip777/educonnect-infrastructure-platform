@@ -35,6 +35,10 @@ public class AuthenticationFilter implements GlobalFilter, Ordered {
             // Auth public endpoints
             "/api/auth/register",
             "/api/auth/login",
+
+            // ✅ NEWLY ADDED (from second code)
+            "/api/teacher/**",
+
             "/api/auth/forgot-password",
             "/api/auth/refresh-token",
             "/api/auth/verify-email",
@@ -43,7 +47,7 @@ public class AuthenticationFilter implements GlobalFilter, Ordered {
             "/api/auth/password/reset",
             "/api/auth/health",
             "/api/courses/public/published",
-            "/api/grades/**",          // add this here
+            "/api/grades/**",
             "/api/subjects/**",
             "/api/topics/**",
 
@@ -201,14 +205,12 @@ public class AuthenticationFilter implements GlobalFilter, Ordered {
     private Claims validateToken(String token) {
         SecretKey key = Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
 
-        // ✅ 0.11.x API — parserBuilder + setSigningKey + parseClaimsJws + getBody
         return Jwts.parserBuilder()
                 .setSigningKey(key)
                 .build()
                 .parseClaimsJws(token)
                 .getBody();
     }
-
 
     private Mono<Void> onError(ServerWebExchange exchange, String message, HttpStatus status) {
         ServerHttpResponse response = exchange.getResponse();
