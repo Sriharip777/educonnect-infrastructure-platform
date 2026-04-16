@@ -103,6 +103,10 @@ public class AuthenticationFilter implements GlobalFilter, Ordered {
         return handleHttpAuth(exchange, chain);
     }
 
+    private String normalizeRole(String role) {
+        return role != null ? role.toUpperCase() : null;
+    }
+
     private Mono<Void> handleWebSocketAuth(ServerWebExchange exchange, GatewayFilterChain chain) {
 
         ServerHttpRequest request = exchange.getRequest();
@@ -121,7 +125,12 @@ public class AuthenticationFilter implements GlobalFilter, Ordered {
         try {
             Claims claims = validateToken(token);
             String userId = claims.getSubject();
-            String role   = claims.get("role", String.class);
+            String role = normalizeRole(claims.get("role", String.class));
+
+            if (!StringUtils.hasText(role)) {
+                log.error("❌ Role missing in JWT");
+                return onError(exchange, "Invalid token: role missing", HttpStatus.UNAUTHORIZED);
+            }
             String email  = claims.get("email", String.class);
 
             log.info("✅ WebSocket JWT VALID: user={}, role={}", email, role);

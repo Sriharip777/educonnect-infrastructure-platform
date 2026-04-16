@@ -411,7 +411,7 @@
                                     .circuitBreaker(c -> c
                                             .setName("support-service-cb")
                                             .setFallbackUri("forward:/fallback/support")))
-                            .uri("http://localhost:8082"))   // 🔥 CHANGE HERE
+                            .uri("lb://customer-support-service"))
                     .build();
         }
 
