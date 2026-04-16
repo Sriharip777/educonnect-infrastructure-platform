@@ -160,6 +160,7 @@
                     .route("user-service", r -> r
                             .path("/user-service/api/users/**")
                             .filters(f -> f
+                                    .stripPrefix(1)
                                     .circuitBreaker(c -> c
                                             .setName("auth-service-cb")
                                             .setFallbackUri("forward:/fallback/user"))
