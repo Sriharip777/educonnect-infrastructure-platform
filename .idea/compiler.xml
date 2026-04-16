@@ -8,6 +8,7 @@
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
         <module name="config-server" />
+        <module name="learning-management-service" />
         <module name="service-discovery" />
       </profile>
       <profile name="Annotation profile for auth-user-service" enabled="true">
@@ -18,6 +19,15 @@
           <entry name="$MAVEN_REPOSITORY$/org/projectlombok/lombok/1.18.36/lombok-1.18.36.jar" />
         </processorPath>
         <module name="auth-user-service" />
+      </profile>
+      <profile name="Annotation profile for Infrastructure Platform" enabled="true">
+        <sourceOutputDir name="target/generated-sources/annotations" />
+        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
+        <outputRelativeToContentRoot value="true" />
+        <processorPath useClasspath="false">
+          <entry name="$MAVEN_REPOSITORY$/org/projectlombok/lombok/1.18.30/lombok-1.18.30.jar" />
+        </processorPath>
+        <module name="event-commons" />
       </profile>
       <profile name="Annotation profile for communication-service" enabled="true">
         <sourceOutputDir name="target/generated-sources/annotations" />
@@ -30,24 +40,16 @@
         </processorPath>
         <module name="communication-service" />
       </profile>
-      <profile name="Annotation profile for Infrastructure Platform" enabled="true">
+      <profile name="Annotation profile for notification-service" enabled="true">
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
         <processorPath useClasspath="false">
-          <entry name="$MAVEN_REPOSITORY$/org/projectlombok/lombok/1.18.36/lombok-1.18.36.jar" />
-          <entry name="$MAVEN_REPOSITORY$/org/projectlombok/lombok/1.18.36/lombok-1.18.36.jar" />
+          <entry name="$MAVEN_REPOSITORY$/org/projectlombok/lombok/1.18.42/lombok-1.18.42.jar" />
         </processorPath>
-        <module name="event-commons" />
-      </profile>
-      <profile name="Annotation profile for Learning Management Service" enabled="true">
-        <sourceOutputDir name="target/generated-sources/annotations" />
-        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
-        <outputRelativeToContentRoot value="true" />
-        <processorPath useClasspath="false">
-          <entry name="$MAVEN_REPOSITORY$/org/projectlombok/lombok/1.18.38/lombok-1.18.38.jar" />
-        </processorPath>
-        <module name="learning-management-service" />
+        <module name="api-gateway" />
+        <module name="financial-service" />
+        <module name="notification-service" />
       </profile>
       <profile name="Annotation profile for common-exceptions" enabled="true">
         <sourceOutputDir name="target/generated-sources/annotations" />
@@ -85,16 +87,19 @@
         </processorPath>
         <module name="common-utils" />
       </profile>
-      <profile name="Annotation profile for financial-service" enabled="true">
+      <profile name="Annotation profile for auth-user-service (1)" enabled="true">
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
+        <option name="mapstruct.defaultComponentModel" value="spring" />
+        <option name="mapstruct.unmappedTargetPolicy" value="IGNORE" />
         <processorPath useClasspath="false">
           <entry name="$MAVEN_REPOSITORY$/org/projectlombok/lombok/1.18.42/lombok-1.18.42.jar" />
+          <entry name="$MAVEN_REPOSITORY$/org/mapstruct/mapstruct-processor/1.6.3/mapstruct-processor-1.6.3.jar" />
+          <entry name="$MAVEN_REPOSITORY$/org/projectlombok/lombok-mapstruct-binding/0.2.0/lombok-mapstruct-binding-0.2.0.jar" />
+          <entry name="$MAVEN_REPOSITORY$/org/springframework/boot/spring-boot-configuration-processor/3.4.1/spring-boot-configuration-processor-3.4.1.jar" />
         </processorPath>
-        <module name="api-gateway" />
-        <module name="financial-service" />
-        <module name="notification-service" />
+        <module name="auth-user-service (1)" />
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel>
@@ -114,7 +119,7 @@
       <module name="common-utils" options="-parameters -parameters -J-Dfile.encoding=UTF-8" />
       <module name="communication-service" options="-parameters -parameters" />
       <module name="config-server" options="-parameters" />
-      <module name="event-commons" options="-parameters -parameters -J-Dfile.encoding=UTF-8" />
+      <module name="event-commons" options="-parameters -parameters" />
       <module name="financial-service" options="-parameters" />
       <module name="learning-management-service" options="-parameters" />
       <module name="notification-service" options="-parameters" />

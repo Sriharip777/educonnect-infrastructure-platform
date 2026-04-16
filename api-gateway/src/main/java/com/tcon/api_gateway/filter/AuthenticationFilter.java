@@ -131,15 +131,15 @@ public class AuthenticationFilter implements GlobalFilter, Ordered {
                 log.error("❌ Role missing in JWT");
                 return onError(exchange, "Invalid token: role missing", HttpStatus.UNAUTHORIZED);
             }
+
             String email  = claims.get("email", String.class);
 
-            log.info("✅ WebSocket JWT VALID: user={}, role={}", email, role);
+            log.info("✅ JWT VALID: user={}, role={}", email, role);
 
             ServerHttpRequest modifiedRequest = request.mutate()
                     .header("X-User-Id", userId)
                     .header("X-User-Role", role)
                     .header("X-User-Email", email)
-                    .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
                     .build();
 
             return chain.filter(exchange.mutate().request(modifiedRequest).build());

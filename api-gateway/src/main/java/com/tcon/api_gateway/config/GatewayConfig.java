@@ -411,7 +411,10 @@
                             .filters(f -> f
                                     .circuitBreaker(c -> c
                                             .setName("support-service-cb")
-                                            .setFallbackUri("forward:/fallback/support")))
+                                            .setFallbackUri("forward:/fallback/support"))
+                                    .retry(config -> config
+                                            .setRetries(2)
+                                            .setMethods(ALL_METHODS)))
                             .uri("lb://customer-support-service"))
                     .build();
         }
