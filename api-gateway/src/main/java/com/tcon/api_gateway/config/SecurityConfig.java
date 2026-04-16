@@ -27,7 +27,14 @@ public class SecurityConfig {
                 .authorizeExchange(exchange -> exchange
                         .pathMatchers(HttpMethod.OPTIONS).permitAll()
                         .pathMatchers("/actuator/**", "/fallback/**").permitAll()
-                        .pathMatchers("/api/auth/**", "/auth/**").permitAll()
+
+                        // ✅ MODIFIED (added new endpoint inside existing matcher)
+                        .pathMatchers(
+                                "/api/auth/**",
+                                "/auth/**",
+                                "/api/teacher/profile/**"
+                        ).permitAll()
+
                         .anyExchange().permitAll()
                 )
                 .httpBasic(ServerHttpSecurity.HttpBasicSpec::disable)
