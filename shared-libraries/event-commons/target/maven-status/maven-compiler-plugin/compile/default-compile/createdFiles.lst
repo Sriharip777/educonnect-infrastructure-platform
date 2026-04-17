@@ -12,8 +12,10 @@ com\tcon\events\events\BookingCreatedEvent.class
 com\tcon\events\EventListener.class
 com\tcon\events\events\ClassStartedEvent.class
 com\tcon\events\events\PaymentCompletedEvent.class
+com\tcon\events\events\SessionEvent$SessionEventBuilder.class
 com\tcon\events\events\TeacherApprovedEvent.class
 com\tcon\events\EventPublisher.class
+com\tcon\events\events\SessionEvent.class
 com\tcon\events\events\ReferralCompletedEvent.class
 com\tcon\events\events\UserCreatedEvent.class
 com\tcon\events\events\SessionScheduledEvent.class
