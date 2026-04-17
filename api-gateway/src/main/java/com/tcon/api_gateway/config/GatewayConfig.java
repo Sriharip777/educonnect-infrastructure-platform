@@ -124,6 +124,22 @@
                                             .setMethods(ALL_METHODS)))
                             .uri("lb://learning-management-service"))
 
+                    .route("teacher-earnings-service", r -> r
+                            .path(
+                                    "/api/teacher/earnings",
+                                    "/api/teacher/earnings/**",
+                                    "/api/teacher/analytics",
+                                    "/api/teacher/analytics/**"
+                            )
+                            .filters(f -> f
+                                    .circuitBreaker(c -> c
+                                            .setName("payment-service-cb")
+                                            .setFallbackUri("forward:/fallback/payout"))
+                                    .retry(config -> config
+                                            .setRetries(2)
+                                            .setMethods(ALL_METHODS)))
+                            .uri("lb://financial-service"))
+
                     .route("teacher-service", r -> r
                             .path("/api/teacher/**")
                             .filters(f -> f
@@ -145,6 +161,20 @@
                                             .setRetries(2)
                                             .setMethods(ALL_METHODS)))
                             .uri("lb://auth-user-service"))
+
+                    .route("admin-earnings-service", r -> r
+                            .path(
+                                    "/api/admin/earnings",        // ✅ ADD THIS
+                                    "/api/admin/earnings/**"      // keep this
+                            )
+                            .filters(f -> f
+                                    .circuitBreaker(c -> c
+                                            .setName("payment-service-cb")
+                                            .setFallbackUri("forward:/fallback/payout"))
+                                    .retry(config -> config
+                                            .setRetries(2)
+                                            .setMethods(ALL_METHODS)))
+                            .uri("lb://financial-service"))
 
                     .route("admin-service", r -> r
                             .path("/api/admin/**")
