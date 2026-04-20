@@ -436,16 +436,18 @@
                                             .setMethods(HttpMethod.GET)))
                             .uri("lb://auth-user-service"))
 
+
+                    .route("actuator", r -> r
+                            .path("/actuator/**")
+                            .filters(f -> f
+                                    .retry(config -> config
+                                            .setRetries(1)
+                                            .setMethods(HttpMethod.GET)))
+                            .uri("lb://auth-user-service"))
+
                     .route("customer-support-service", r -> r
                             .path("/api/support/**")
-                            .filters(f -> f
-                                    .circuitBreaker(c -> c
-                                            .setName("support-service-cb")
-                                            .setFallbackUri("forward:/fallback/support"))
-                                    .retry(config -> config
-                                            .setRetries(2)
-                                            .setMethods(ALL_METHODS)))
-                            .uri("lb://customer-support-service"))
+                            .uri("lb://CUSTOMERSUPPORTSERVICE"))
                     .build();
         }
 
