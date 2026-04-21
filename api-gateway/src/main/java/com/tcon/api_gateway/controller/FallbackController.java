@@ -16,6 +16,8 @@ public class FallbackController {
     // ✅ FIX: @RequestMapping handles ALL HTTP methods (GET, POST, PUT, DELETE, PATCH)
     // Previously using @GetMapping caused 405 when circuit breaker forwarded POST requests
 
+
+
     @RequestMapping("/fallback/auth")
     public ResponseEntity<Map<String, Object>> authFallback() {
         log.warn("⚠️ Auth service fallback triggered");

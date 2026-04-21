@@ -23,7 +23,7 @@ import org.springframework.core.env.Environment;
         @LoadBalancerClient(name = "notification-service",           configuration = LoadBalancerConfig.class),
         @LoadBalancerClient(name = "integration-service",            configuration = LoadBalancerConfig.class),
         @LoadBalancerClient(name = "content-service",                configuration = LoadBalancerConfig.class),
-        @LoadBalancerClient(name = "CUSTOMERSUPPORTSERVICE",         configuration = LoadBalancerConfig.class)
+        @LoadBalancerClient(name = "customer-support-service", configuration = LoadBalancerConfig.class)
 })
 @Slf4j
 public class LoadBalancerConfig {

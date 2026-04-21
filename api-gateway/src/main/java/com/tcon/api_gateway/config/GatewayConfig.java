@@ -436,18 +436,15 @@
                                             .setMethods(HttpMethod.GET)))
                             .uri("lb://auth-user-service"))
 
-
-                    .route("actuator", r -> r
-                            .path("/actuator/**")
-                            .filters(f -> f
-                                    .retry(config -> config
-                                            .setRetries(1)
-                                            .setMethods(HttpMethod.GET)))
-                            .uri("lb://auth-user-service"))
-
                     .route("customer-support-service", r -> r
                             .path("/api/support/**")
-                            .uri("lb://CUSTOMERSUPPORTSERVICE"))
+                            .filters(f -> f
+                                    .circuitBreaker(c -> c
+                                            .setName("support-service-cb")) // ✅ no fallbackUri here
+                                    .retry(config -> config
+                                            .setRetries(2)
+                                            .setMethods(ALL_METHODS)))
+                            .uri("lb://customer-support-service")) // ✅ matches spring.application.name
                     .build();
         }
 
@@ -618,15 +615,15 @@
         public Customizer<ReactiveResilience4JCircuitBreakerFactory> supportCircuitBreakerCustomizer() {
             return factory -> factory.configure(builder -> builder
                     .circuitBreakerConfig(CircuitBreakerConfig.custom()
-                            .slidingWindowSize(10)
-                            .minimumNumberOfCalls(5)
-                            .failureRateThreshold(50.0f)
-                            .waitDurationInOpenState(Duration.ofSeconds(10))
-                            .permittedNumberOfCallsInHalfOpenState(3)
+                            .slidingWindowSize(20)
+                            .minimumNumberOfCalls(10)          // needs 10 calls before evaluating
+                            .failureRateThreshold(60.0f)       // 60% failure rate to open
+                            .waitDurationInOpenState(Duration.ofSeconds(15))
+                            .permittedNumberOfCallsInHalfOpenState(5)
                             .automaticTransitionFromOpenToHalfOpenEnabled(true)
                             .build())
                     .timeLimiterConfig(TimeLimiterConfig.custom()
-                            .timeoutDuration(Duration.ofSeconds(10)) // 🔥 CRITICAL FIX
+                            .timeoutDuration(Duration.ofSeconds(30)) // generous timeout for support
                             .cancelRunningFuture(true)
                             .build())
                     .build(), "support-service-cb");
