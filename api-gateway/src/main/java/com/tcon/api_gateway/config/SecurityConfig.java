@@ -19,28 +19,38 @@ public class SecurityConfig {
         log.info("🔒 Configuring API Gateway Security");
 
         http
+                // CSRF is not needed for a stateless API gateway
                 .csrf(ServerHttpSecurity.CsrfSpec::disable)
 
-                // ✅ Enable CORS (handled by CorsWebFilterConfig)
-                .cors(cors -> {})
+                // CORS is handled by CorsWebFilterConfig
+                .cors(cors -> { })
 
                 .authorizeExchange(exchange -> exchange
+
+                        // Allow all preflight requests
                         .pathMatchers(HttpMethod.OPTIONS).permitAll()
+
+                        // Health and circuit breaker fallbacks
                         .pathMatchers("/actuator/**", "/fallback/**").permitAll()
 
-                        // ✅ MODIFIED (added new endpoint inside existing matcher)
+                        // Auth endpoints (login/registration/verification etc.)
                         .pathMatchers(
                                 "/api/auth/**",
-                                "/auth/**",
-                                "/api/teacher/profile/**"
+                                "/auth/**"
                         ).permitAll()
 
+                        // Teacher public profile (if you want it public)
+                        .pathMatchers("/api/teacher/profile/**").permitAll()
+
+                        // Everything else is allowed for now (gateway is not enforcing auth)
                         .anyExchange().permitAll()
                 )
+
+                // Disable HTTP Basic and form login — not used on gateway
                 .httpBasic(ServerHttpSecurity.HttpBasicSpec::disable)
                 .formLogin(ServerHttpSecurity.FormLoginSpec::disable);
 
-        log.info("✅ Security configured - CORS handled by CorsWebFilterConfig");
+        log.info("✅ API Gateway Security configured (stateless, CORS via CorsWebFilterConfig)");
 
         return http.build();
     }
