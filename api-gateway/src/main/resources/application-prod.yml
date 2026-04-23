@@ -38,12 +38,12 @@ spring:
 
       discovery:
         locator:
-          enabled: true
+          enabled: false
           lower-case-service-id: true
 
       httpclient:
         connect-timeout: 60000
-        response-timeout: 5m
+        response-timeout: 300s
         websocket:
           max-frame-payload-length: 1048576
           proxy-ping: true
@@ -76,6 +76,7 @@ eureka:
     health-check-url: https://${eureka.instance.hostname}/actuator/health
     lease-renewal-interval-in-seconds: 30
     lease-expiration-duration-in-seconds: 180
+    initial-status: UP
 
 management:
   endpoints:
@@ -83,12 +84,14 @@ management:
       exposure:
         include: health,info,metrics,gateway,prometheus
       base-path: /actuator
+
   endpoint:
     health:
       show-details: always
       show-components: always
     gateway:
       enabled: true
+
   health:
     redis:
       enabled: true
@@ -96,12 +99,15 @@ management:
 logging:
   level:
     root: ${LOG_LEVEL_ROOT:INFO}
-    com.tcon.api_gateway: ${LOG_LEVEL_APP:INFO}
-    org.springframework.cloud.gateway: INFO
+    com.tcon.api_gateway: ${LOG_LEVEL_APP:DEBUG}
+    org.springframework.cloud.gateway: DEBUG
+    org.springframework.cloud.gateway.handler.RoutePredicateHandlerMapping: DEBUG
+    org.springframework.cloud.gateway.route.RouteDefinitionRouteLocator: DEBUG
     com.netflix.discovery: INFO
     org.springframework.data.redis: WARN
     reactor.netty: WARN
     io.netty: ERROR
+
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
 
@@ -189,6 +195,14 @@ resilience4j:
         permittedNumberOfCallsInHalfOpenState: 3
         automaticTransitionFromOpenToHalfOpenEnabled: true
 
+      support-service-cb:
+        slidingWindowSize: 20
+        minimumNumberOfCalls: 10
+        failureRateThreshold: 60
+        waitDurationInOpenState: 15s
+        permittedNumberOfCallsInHalfOpenState: 5
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+
   timelimiter:
     instances:
       auth-service-cb:
@@ -207,6 +221,8 @@ resilience4j:
         timeoutDuration: 15s
       content-service-cb:
         timeoutDuration: 15s
+      support-service-cb:
+        timeoutDuration: 30s
 
 gateway:
   rate-limiter:
