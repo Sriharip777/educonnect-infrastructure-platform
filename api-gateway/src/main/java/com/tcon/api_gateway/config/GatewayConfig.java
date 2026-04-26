@@ -24,16 +24,15 @@ public class GatewayConfig {
     private final RedisRateLimiter authRateLimiter;
     private final RedisRateLimiter paymentRateLimiter;
 
-    private static final HttpMethod[] SAFE_RETRY_METHODS = {
-            HttpMethod.GET,
-            HttpMethod.OPTIONS
+    private static final HttpMethod[] ALL_METHODS = {
+            HttpMethod.GET, HttpMethod.POST, HttpMethod.PUT,
+            HttpMethod.DELETE, HttpMethod.PATCH, HttpMethod.OPTIONS
     };
 
     public GatewayConfig(
             KeyResolver userKeyResolver,
             @Qualifier("authRateLimiter") RedisRateLimiter authRateLimiter,
-            @Qualifier("paymentRateLimiter") RedisRateLimiter paymentRateLimiter
-    ) {
+            @Qualifier("paymentRateLimiter") RedisRateLimiter paymentRateLimiter) {
         this.userKeyResolver = userKeyResolver;
         this.authRateLimiter = authRateLimiter;
         this.paymentRateLimiter = paymentRateLimiter;
@@ -41,11 +40,11 @@ public class GatewayConfig {
 
     @Bean
     public RouteLocator customRouteLocator(RouteLocatorBuilder builder) {
-        log.info("Configuring API Gateway routes");
+        log.info("🚀 Configuring API Gateway Routes");
 
         return builder.routes()
 
-                // ===== MOST SPECIFIC AUTH ROUTES =====
+                // ===== AUTH SERVICE =====
                 .route("auth-password-reset", r -> r
                         .path("/api/auth/password/reset-request", "/api/auth/password/reset")
                         .filters(f -> f
@@ -54,7 +53,7 @@ public class GatewayConfig {
                                         .setFallbackUri("forward:/fallback/auth"))
                                 .retry(config -> config
                                         .setRetries(2)
-                                        .setMethods(SAFE_RETRY_METHODS)))
+                                        .setMethods(ALL_METHODS)))
                         .uri("lb://auth-user-service"))
 
                 .route("auth-service", r -> r
@@ -69,65 +68,55 @@ public class GatewayConfig {
                                         .setFallbackUri("forward:/fallback/auth"))
                                 .retry(config -> config
                                         .setRetries(2)
-                                        .setMethods(SAFE_RETRY_METHODS)
+                                        .setMethods(ALL_METHODS)
                                         .setBackoff(Duration.ofMillis(100), Duration.ofMillis(1000), 2, false)))
                         .uri("lb://auth-user-service"))
 
-                .route("user-service-internal", r -> r
-                        .path("/user-service/api/users/**")
+                // ===== WORKSHEET SERVICE =====
+                .route("worksheet-admin-service", r -> r
+                        .path("/api/admin/worksheets/**")
                         .filters(f -> f
-                                .stripPrefix(1)
+                                .circuitBreaker(c -> c
+                                        .setName("lms-cb")
+                                        .setFallbackUri("forward:/fallback/course"))
+                                .retry(config -> config
+                                        .setRetries(2)
+                                        .setMethods(ALL_METHODS)))
+                        .uri("lb://learning-management-service"))
+
+                .route("student-worksheet-service", r -> r
+                        .path("/api/student/worksheets/**")
+                        .filters(f -> f
+                                .circuitBreaker(c -> c
+                                        .setName("lms-cb")
+                                        .setFallbackUri("forward:/fallback/course"))
+                                .retry(config -> config
+                                        .setRetries(2)
+                                        .setMethods(ALL_METHODS)))
+                        .uri("lb://learning-management-service"))
+
+                // ===== USER ROLE SERVICES =====
+                .route("student-service", r -> r
+                        .path("/api/student/**")
+                        .filters(f -> f
                                 .circuitBreaker(c -> c
                                         .setName("auth-service-cb")
                                         .setFallbackUri("forward:/fallback/user"))
                                 .retry(config -> config
                                         .setRetries(2)
-                                        .setMethods(SAFE_RETRY_METHODS)))
+                                        .setMethods(ALL_METHODS)))
                         .uri("lb://auth-user-service"))
 
-                // ===== FINANCIAL SERVICE - KEEP BEFORE GENERIC /api/student/** etc =====
-                .route("payment-service", r -> r
-                        .path(
-                                "/api/payments",
-                                "/api/payments/**",
-                                "/api/refunds",
-                                "/api/refunds/**",
-                                "/api/commissions",
-                                "/api/commissions/**"
-                        )
+                .route("teacher-worksheet-service", r -> r
+                        .path("/api/teacher/worksheets/**")
                         .filters(f -> f
-                                .requestRateLimiter(c -> c
-                                        .setRateLimiter(paymentRateLimiter)
-                                        .setKeyResolver(userKeyResolver)
-                                        .setDenyEmptyKey(false))
                                 .circuitBreaker(c -> c
-                                        .setName("payment-service-cb")
-                                        .setFallbackUri("forward:/fallback/payment"))
+                                        .setName("lms-cb")
+                                        .setFallbackUri("forward:/fallback/course"))
                                 .retry(config -> config
                                         .setRetries(2)
-                                        .setMethods(SAFE_RETRY_METHODS)
-                                        .setBackoff(Duration.ofMillis(200), Duration.ofMillis(1000), 2, false)))
-                        .uri("lb://financial-service"))
-
-                .route("payout-service", r -> r
-                        .path(
-                                "/api/payouts",
-                                "/api/payouts/**",
-                                "/api/earnings",
-                                "/api/earnings/**"
-                        )
-                        .filters(f -> f
-                                .requestRateLimiter(c -> c
-                                        .setRateLimiter(paymentRateLimiter)
-                                        .setKeyResolver(userKeyResolver)
-                                        .setDenyEmptyKey(false))
-                                .circuitBreaker(c -> c
-                                        .setName("payment-service-cb")
-                                        .setFallbackUri("forward:/fallback/payout"))
-                                .retry(config -> config
-                                        .setRetries(2)
-                                        .setMethods(SAFE_RETRY_METHODS)))
-                        .uri("lb://financial-service"))
+                                        .setMethods(ALL_METHODS)))
+                        .uri("lb://learning-management-service"))
 
                 .route("teacher-earnings-service", r -> r
                         .path(
@@ -142,8 +131,30 @@ public class GatewayConfig {
                                         .setFallbackUri("forward:/fallback/payout"))
                                 .retry(config -> config
                                         .setRetries(2)
-                                        .setMethods(SAFE_RETRY_METHODS)))
+                                        .setMethods(ALL_METHODS)))
                         .uri("lb://financial-service"))
+
+                .route("teacher-service", r -> r
+                        .path("/api/teacher/**")
+                        .filters(f -> f
+                                .circuitBreaker(c -> c
+                                        .setName("auth-service-cb")
+                                        .setFallbackUri("forward:/fallback/user"))
+                                .retry(config -> config
+                                        .setRetries(2)
+                                        .setMethods(ALL_METHODS)))
+                        .uri("lb://auth-user-service"))
+
+                .route("parent-service", r -> r
+                        .path("/api/parent/**")
+                        .filters(f -> f
+                                .circuitBreaker(c -> c
+                                        .setName("auth-service-cb")
+                                        .setFallbackUri("forward:/fallback/user"))
+                                .retry(config -> config
+                                        .setRetries(2)
+                                        .setMethods(ALL_METHODS)))
+                        .uri("lb://auth-user-service"))
 
                 .route("admin-earnings-service", r -> r
                         .path(
@@ -156,43 +167,33 @@ public class GatewayConfig {
                                         .setFallbackUri("forward:/fallback/payout"))
                                 .retry(config -> config
                                         .setRetries(2)
-                                        .setMethods(SAFE_RETRY_METHODS)))
+                                        .setMethods(ALL_METHODS)))
                         .uri("lb://financial-service"))
 
-                // ===== LMS SPECIFIC ROUTES =====
-                .route("worksheet-admin-service", r -> r
-                        .path("/api/admin/worksheets/**")
+                .route("admin-service", r -> r
+                        .path("/api/admin/**")
                         .filters(f -> f
                                 .circuitBreaker(c -> c
-                                        .setName("lms-cb")
-                                        .setFallbackUri("forward:/fallback/course"))
+                                        .setName("auth-service-cb")
+                                        .setFallbackUri("forward:/fallback/user"))
                                 .retry(config -> config
                                         .setRetries(2)
-                                        .setMethods(SAFE_RETRY_METHODS)))
-                        .uri("lb://learning-management-service"))
+                                        .setMethods(ALL_METHODS)))
+                        .uri("lb://auth-user-service"))
 
-                .route("student-worksheet-service", r -> r
-                        .path("/api/student/worksheets/**")
+                .route("user-service", r -> r
+                        .path("/user-service/api/users/**")
                         .filters(f -> f
+                                .stripPrefix(1)
                                 .circuitBreaker(c -> c
-                                        .setName("lms-cb")
-                                        .setFallbackUri("forward:/fallback/course"))
+                                        .setName("auth-service-cb")
+                                        .setFallbackUri("forward:/fallback/user"))
                                 .retry(config -> config
                                         .setRetries(2)
-                                        .setMethods(SAFE_RETRY_METHODS)))
-                        .uri("lb://learning-management-service"))
+                                        .setMethods(ALL_METHODS)))
+                        .uri("lb://auth-user-service"))
 
-                .route("teacher-worksheet-service", r -> r
-                        .path("/api/teacher/worksheets/**")
-                        .filters(f -> f
-                                .circuitBreaker(c -> c
-                                        .setName("lms-cb")
-                                        .setFallbackUri("forward:/fallback/course"))
-                                .retry(config -> config
-                                        .setRetries(2)
-                                        .setMethods(SAFE_RETRY_METHODS)))
-                        .uri("lb://learning-management-service"))
-
+                // ===== WORKSHEET PUBLIC SERVICE =====
                 .route("worksheet-public-service", r -> r
                         .path("/api/worksheets/**")
                         .filters(f -> f
@@ -201,9 +202,10 @@ public class GatewayConfig {
                                         .setFallbackUri("forward:/fallback/course"))
                                 .retry(config -> config
                                         .setRetries(2)
-                                        .setMethods(SAFE_RETRY_METHODS)))
+                                        .setMethods(ALL_METHODS)))
                         .uri("lb://learning-management-service"))
 
+                // ===== LEARNING MANAGEMENT SERVICE =====
                 .route("course-service", r -> r
                         .path("/api/courses/**")
                         .filters(f -> f
@@ -212,7 +214,7 @@ public class GatewayConfig {
                                         .setFallbackUri("forward:/fallback/course"))
                                 .retry(config -> config
                                         .setRetries(2)
-                                        .setMethods(SAFE_RETRY_METHODS)))
+                                        .setMethods(ALL_METHODS)))
                         .uri("lb://learning-management-service"))
 
                 .route("booking-service", r -> r
@@ -230,7 +232,7 @@ public class GatewayConfig {
                                         .setFallbackUri("forward:/fallback/booking"))
                                 .retry(config -> config
                                         .setRetries(2)
-                                        .setMethods(SAFE_RETRY_METHODS)))
+                                        .setMethods(ALL_METHODS)))
                         .uri("lb://learning-management-service"))
 
                 .route("demo-service", r -> r
@@ -241,7 +243,7 @@ public class GatewayConfig {
                                         .setFallbackUri("forward:/fallback/demo"))
                                 .retry(config -> config
                                         .setRetries(2)
-                                        .setMethods(SAFE_RETRY_METHODS)))
+                                        .setMethods(ALL_METHODS)))
                         .uri("lb://learning-management-service"))
 
                 .route("grades-subjects-topics", r -> r
@@ -252,7 +254,7 @@ public class GatewayConfig {
                                         .setFallbackUri("forward:/fallback/course"))
                                 .retry(config -> config
                                         .setRetries(2)
-                                        .setMethods(SAFE_RETRY_METHODS)))
+                                        .setMethods(ALL_METHODS)))
                         .uri("lb://learning-management-service"))
 
                 .route("curriculum-service", r -> r
@@ -263,7 +265,7 @@ public class GatewayConfig {
                                         .setFallbackUri("forward:/fallback/course"))
                                 .retry(config -> config
                                         .setRetries(2)
-                                        .setMethods(SAFE_RETRY_METHODS)))
+                                        .setMethods(ALL_METHODS)))
                         .uri("lb://learning-management-service"))
 
                 .route("assignment-service", r -> r
@@ -274,7 +276,7 @@ public class GatewayConfig {
                                         .setFallbackUri("forward:/fallback/assignment"))
                                 .retry(config -> config
                                         .setRetries(2)
-                                        .setMethods(SAFE_RETRY_METHODS)))
+                                        .setMethods(ALL_METHODS)))
                         .uri("lb://learning-management-service"))
 
                 .route("question-service", r -> r
@@ -285,7 +287,7 @@ public class GatewayConfig {
                                         .setFallbackUri("forward:/fallback/question"))
                                 .retry(config -> config
                                         .setRetries(2)
-                                        .setMethods(SAFE_RETRY_METHODS)))
+                                        .setMethods(ALL_METHODS)))
                         .uri("lb://learning-management-service"))
 
                 .route("submission-service", r -> r
@@ -296,7 +298,7 @@ public class GatewayConfig {
                                         .setFallbackUri("forward:/fallback/submission"))
                                 .retry(config -> config
                                         .setRetries(2)
-                                        .setMethods(SAFE_RETRY_METHODS)))
+                                        .setMethods(ALL_METHODS)))
                         .uri("lb://learning-management-service"))
 
                 .route("resource-service", r -> r
@@ -307,7 +309,7 @@ public class GatewayConfig {
                                         .setFallbackUri("forward:/fallback/course"))
                                 .retry(config -> config
                                         .setRetries(2)
-                                        .setMethods(SAFE_RETRY_METHODS)))
+                                        .setMethods(ALL_METHODS)))
                         .uri("lb://learning-management-service"))
 
                 // ===== COMMUNICATION SERVICE =====
@@ -327,7 +329,7 @@ public class GatewayConfig {
                                         .setFallbackUri("forward:/fallback/whiteboard"))
                                 .retry(config -> config
                                         .setRetries(2)
-                                        .setMethods(SAFE_RETRY_METHODS)
+                                        .setMethods(ALL_METHODS)
                                         .setBackoff(Duration.ofMillis(100), Duration.ofMillis(1000), 2, false)))
                         .uri("lb://communication-service"))
 
@@ -339,7 +341,7 @@ public class GatewayConfig {
                                         .setFallbackUri("forward:/fallback/video"))
                                 .retry(config -> config
                                         .setRetries(2)
-                                        .setMethods(SAFE_RETRY_METHODS)))
+                                        .setMethods(ALL_METHODS)))
                         .uri("lb://communication-service"))
 
                 .route("messaging-service", r -> r
@@ -350,10 +352,52 @@ public class GatewayConfig {
                                         .setFallbackUri("forward:/fallback/message"))
                                 .retry(config -> config
                                         .setRetries(2)
-                                        .setMethods(SAFE_RETRY_METHODS)))
+                                        .setMethods(ALL_METHODS)))
                         .uri("lb://communication-service"))
 
-                // ===== OTHER SERVICES =====
+                // ===== FINANCIAL SERVICE =====
+                .route("payment-service", r -> r
+                        .path(
+                                "/api/payments",
+                                "/api/payments/**",
+                                "/api/refunds",
+                                "/api/refunds/**"
+                        )
+                        .filters(f -> f
+                                .requestRateLimiter(c -> c
+                                        .setRateLimiter(paymentRateLimiter)
+                                        .setKeyResolver(userKeyResolver)
+                                        .setDenyEmptyKey(false))
+                                .circuitBreaker(c -> c
+                                        .setName("payment-service-cb")
+                                        .setFallbackUri("forward:/fallback/payment"))
+                                .retry(config -> config
+                                        .setRetries(3)
+                                        .setMethods(ALL_METHODS)
+                                        .setBackoff(Duration.ofMillis(200), Duration.ofMillis(2000), 2, false)))
+                        .uri("lb://financial-service"))
+
+                .route("payout-service", r -> r
+                        .path(
+                                "/api/payouts",
+                                "/api/payouts/**",
+                                "/api/earnings",
+                                "/api/earnings/**"
+                        )
+                        .filters(f -> f
+                                .requestRateLimiter(c -> c
+                                        .setRateLimiter(paymentRateLimiter)
+                                        .setKeyResolver(userKeyResolver)
+                                        .setDenyEmptyKey(false))
+                                .circuitBreaker(c -> c
+                                        .setName("payment-service-cb")
+                                        .setFallbackUri("forward:/fallback/payout"))
+                                .retry(config -> config
+                                        .setRetries(2)
+                                        .setMethods(ALL_METHODS)))
+                        .uri("lb://financial-service"))
+
+                // ===== NOTIFICATION SERVICE =====
                 .route("notification-service", r -> r
                         .path("/api/notifications/**")
                         .filters(f -> f
@@ -362,9 +406,10 @@ public class GatewayConfig {
                                         .setFallbackUri("forward:/fallback/notification"))
                                 .retry(config -> config
                                         .setRetries(2)
-                                        .setMethods(SAFE_RETRY_METHODS)))
+                                        .setMethods(ALL_METHODS)))
                         .uri("lb://notification-service"))
 
+                // ===== INTEGRATION SERVICE =====
                 .route("integration-service", r -> r
                         .path("/api/files/**", "/api/calendar/**", "/api/referrals/**", "/api/analytics/**")
                         .filters(f -> f
@@ -373,9 +418,10 @@ public class GatewayConfig {
                                         .setFallbackUri("forward:/fallback/integration"))
                                 .retry(config -> config
                                         .setRetries(2)
-                                        .setMethods(SAFE_RETRY_METHODS)))
+                                        .setMethods(ALL_METHODS)))
                         .uri("lb://integration-service"))
 
+                // ===== CONTENT SERVICE =====
                 .route("content-service", r -> r
                         .path("/api/recordings/**", "/api/reviews/**", "/api/materials/**")
                         .filters(f -> f
@@ -384,18 +430,8 @@ public class GatewayConfig {
                                         .setFallbackUri("forward:/fallback/content"))
                                 .retry(config -> config
                                         .setRetries(2)
-                                        .setMethods(SAFE_RETRY_METHODS)))
+                                        .setMethods(ALL_METHODS)))
                         .uri("lb://content-service"))
-
-                .route("customer-support-service", r -> r
-                        .path("/api/support/**")
-                        .filters(f -> f
-                                .circuitBreaker(c -> c
-                                        .setName("support-service-cb"))
-                                .retry(config -> config
-                                        .setRetries(2)
-                                        .setMethods(SAFE_RETRY_METHODS)))
-                        .uri("lb://customer-support-service"))
 
                 .route("actuator", r -> r
                         .path("/actuator/**")
@@ -405,54 +441,15 @@ public class GatewayConfig {
                                         .setMethods(HttpMethod.GET)))
                         .uri("lb://auth-user-service"))
 
-                // ===== GENERIC ROLE ROUTES - KEEP LAST =====
-                .route("student-service", r -> r
-                        .order(100)
-                        .path("/api/student/**")
+                .route("customer-support-service", r -> r
+                        .path("/api/support/**")
                         .filters(f -> f
                                 .circuitBreaker(c -> c
-                                        .setName("auth-service-cb")
-                                        .setFallbackUri("forward:/fallback/user"))
+                                        .setName("support-service-cb"))
                                 .retry(config -> config
                                         .setRetries(2)
-                                        .setMethods(SAFE_RETRY_METHODS)))
-                        .uri("lb://auth-user-service"))
-
-                .route("teacher-service", r -> r
-                        .order(100)
-                        .path("/api/teacher/**")
-                        .filters(f -> f
-                                .circuitBreaker(c -> c
-                                        .setName("auth-service-cb")
-                                        .setFallbackUri("forward:/fallback/user"))
-                                .retry(config -> config
-                                        .setRetries(2)
-                                        .setMethods(SAFE_RETRY_METHODS)))
-                        .uri("lb://auth-user-service"))
-
-                .route("parent-service", r -> r
-                        .order(100)
-                        .path("/api/parent/**")
-                        .filters(f -> f
-                                .circuitBreaker(c -> c
-                                        .setName("auth-service-cb")
-                                        .setFallbackUri("forward:/fallback/user"))
-                                .retry(config -> config
-                                        .setRetries(2)
-                                        .setMethods(SAFE_RETRY_METHODS)))
-                        .uri("lb://auth-user-service"))
-
-                .route("admin-service", r -> r
-                        .order(100)
-                        .path("/api/admin/**")
-                        .filters(f -> f
-                                .circuitBreaker(c -> c
-                                        .setName("auth-service-cb")
-                                        .setFallbackUri("forward:/fallback/user"))
-                                .retry(config -> config
-                                        .setRetries(2)
-                                        .setMethods(SAFE_RETRY_METHODS)))
-                        .uri("lb://auth-user-service"))
+                                        .setMethods(ALL_METHODS)))
+                        .uri("lb://customer-support-service"))
 
                 .build();
     }
