@@ -49,7 +49,7 @@ public class WebSocketProxyConfig {
 
             @Override
             public boolean supports(Type type) {
-                return type == Type.RESPONSE;
+                return type == Type.REQUEST;   // 🔥 MUST BE REQUEST
             }
         };
     }

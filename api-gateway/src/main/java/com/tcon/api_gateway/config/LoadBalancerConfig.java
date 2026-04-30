@@ -1,3 +1,4 @@
+
 package com.tcon.api_gateway.config;
 
 import lombok.extern.slf4j.Slf4j;
@@ -40,6 +41,12 @@ public class LoadBalancerConfig {
             LoadBalancerClientFactory loadBalancerClientFactory) {
 
         String name = environment.getProperty(LoadBalancerClientFactory.PROPERTY_NAME);
+
+        if (name == null) {
+            log.warn("⚠️ Skipping LoadBalancer initialization for NULL service (root context)");
+            return null;  // 🔥 prevent NPE
+        }
+
         log.info("🔄 Configuring Round Robin Load Balancer for service: {}", name);
 
         return new RoundRobinLoadBalancer(

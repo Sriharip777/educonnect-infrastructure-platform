@@ -77,7 +77,7 @@ public class AuthenticationFilter implements GlobalFilter, Ordered {
         log.debug("🌐 API Gateway: {} {}", method, path);
 
         // Skip WebSocket paths
-        if (path.startsWith("/ws-messaging")) {
+        if (path.startsWith("/ws")) {
             log.info("🔓 Skipping JWT for WebSocket path: {}", path);
             return chain.filter(exchange);
         }
@@ -92,11 +92,6 @@ public class AuthenticationFilter implements GlobalFilter, Ordered {
         if (isPublicPath(path)) {
             log.debug("✅ Public path: {}", path);
             return chain.filter(exchange);
-        }
-
-        // Handle WebSocket paths (token in query parameter)
-        if (path.startsWith("/ws-messaging")) {
-            return handleWebSocketAuth(exchange, chain);
         }
 
         // Handle regular HTTP requests
@@ -247,4 +242,6 @@ public class AuthenticationFilter implements GlobalFilter, Ordered {
     public int getOrder() {
         return 0;
     }
+
+
 }

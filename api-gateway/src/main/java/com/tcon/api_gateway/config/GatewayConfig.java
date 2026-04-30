@@ -44,6 +44,12 @@ public class GatewayConfig {
 
         return builder.routes()
 
+
+                .route("customer-support-ws", r -> r
+                        .path("/ws/support-chat", "/ws/support-chat/**")
+                        .uri("lb:ws://customer-support-service"))
+
+
                 // ===== AUTH SERVICE =====
                 .route("auth-password-reset", r -> r
                         .path("/api/auth/password/reset-request", "/api/auth/password/reset")
@@ -314,11 +320,7 @@ public class GatewayConfig {
 
                 // ===== COMMUNICATION SERVICE =====
                 .route("communication-ws", r -> r
-                        .path("/ws-messaging/**")
-                        .filters(f -> f
-                                .circuitBreaker(c -> c
-                                        .setName("video-service-cb")
-                                        .setFallbackUri("forward:/fallback/websocket")))
+                        .path("/ws-messaging", "/ws-messaging/**")
                         .uri("lb:ws://communication-service"))
 
                 .route("whiteboard-service", r -> r
@@ -442,10 +444,10 @@ public class GatewayConfig {
                         .uri("lb://auth-user-service"))
 
                 .route("customer-support-service", r -> r
-                        .path("/api/support/**")
+                        .path("/api/support/**", "/api/chats/**", "/api/test/**")
                         .filters(f -> f
-                                .circuitBreaker(c -> c
-                                        .setName("support-service-cb"))
+                                .stripPrefix(1)
+                                .circuitBreaker(c -> c.setName("support-service-cb"))
                                 .retry(config -> config
                                         .setRetries(2)
                                         .setMethods(ALL_METHODS)))
