@@ -1,7 +1,11 @@
 package com.tcon.events.events;
 
-import lombok.*;
-import java.time.LocalDateTime;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.time.Instant;
 
 @Data
 @Builder
@@ -14,7 +18,7 @@ public class SessionEvent {
     private String courseId;
     private String teacherId;
     private String studentId;
-    private LocalDateTime scheduledStartTime;
+    private Instant scheduledStartTime;
     private String cancellationReason;
-    private LocalDateTime timestamp;
+    private Instant timestamp;
 }
